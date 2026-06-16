@@ -22,8 +22,10 @@ services:
         value: "true"
       - key: SIM_PIN_EXPECTED
         value: "1234"
-      # Credenciales de la UI (si aplica login). Cámbialas en el dashboard.
-      # - key: SIM_LOGIN_USER
-      #   sync: false
-      # - key: SIM_LOGIN_PASS
-      #   sync: false
+      # Login de la UI/API. El login SOLO se activa si SIM_ADMIN_PASS tiene
+      # valor; si se omite, la app queda en modo abierto (sin login).
+      # Define ambas en el dashboard (no las pongas en texto plano en el repo).
+      - key: SIM_ADMIN_USER
+        sync: false
+      - key: SIM_ADMIN_PASS
+        sync: false
