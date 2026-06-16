@@ -61,11 +61,11 @@ Pasos en Render:
    tu proveedor del dominio (donde compraste tesh-desarrollo.com):
 
    - **Apex / raíz** `tesh-desarrollo.com`
-     - Registro **ALIAS / ANAME** → `iso8583-simulator.onrender.com`
+     - Registro **ALIAS / ANAME** → `iso8583-simulator-qchy.onrender.com`
      - Si tu proveedor NO soporta ALIAS en el apex, usa un registro **A**
        con la IP que te indique Render en esa misma pantalla.
    - **www** `www.tesh-desarrollo.com`
-     - Registro **CNAME** → `iso8583-simulator.onrender.com`
+     - Registro **CNAME** → `iso8583-simulator-qchy.onrender.com`
 
 3. Guarda y espera la propagación (de minutos a ~1 h). Cuando Render verifique
    el DNS, emite el certificado TLS solo y el candado HTTPS queda activo.
