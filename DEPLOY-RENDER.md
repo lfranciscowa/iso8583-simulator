@@ -48,6 +48,34 @@ Detecta `render.yaml` (rootDir: csr). Configura las variables:
 4. Abre la URL del simulador -> historial: verás la transacción con
    peer "POS (bridge)".
 
+## 5) Conectar el dominio propio (tesh-desarrollo.com) al SIMULADOR
+
+El `render.yaml` ya declara los dominios `tesh-desarrollo.com` y
+`www.tesh-desarrollo.com` para el servicio `iso8583-simulator`.
+
+Pasos en Render:
+1. Abre el servicio `iso8583-simulator` → **Settings → Custom Domains**.
+   Deben aparecer ya `tesh-desarrollo.com` y `www.tesh-desarrollo.com`
+   (en estado "Pending / verifying" hasta que el DNS apunte).
+2. Render te muestra a qué apuntar. Crea estos registros en el panel DNS de
+   tu proveedor del dominio (donde compraste tesh-desarrollo.com):
+
+   - **Apex / raíz** `tesh-desarrollo.com`
+     - Registro **ALIAS / ANAME** → `iso8583-simulator.onrender.com`
+     - Si tu proveedor NO soporta ALIAS en el apex, usa un registro **A**
+       con la IP que te indique Render en esa misma pantalla.
+   - **www** `www.tesh-desarrollo.com`
+     - Registro **CNAME** → `iso8583-simulator.onrender.com`
+
+3. Guarda y espera la propagación (de minutos a ~1 h). Cuando Render verifique
+   el DNS, emite el certificado TLS solo y el candado HTTPS queda activo.
+4. Verifica abriendo `https://tesh-desarrollo.com` → debe cargar la UI del
+   simulador.
+
+> Nota: si el POS (visual-admin) apunta al simulador por `POS_BRIDGE_URL`,
+> puedes cambiarlo a `https://tesh-desarrollo.com/api/pos-tcp` una vez que el
+> dominio esté activo (la URL `.onrender.com` sigue funcionando igual).
+
 ## Notas
 
 - Plan free de Render duerme tras inactividad; la primera petición tarda ~30s.
