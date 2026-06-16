@@ -28,16 +28,52 @@ const { writePrefix } = require('./lib/framing');
 const auth = require('./lib/auth');
 const { maskHistoryEntry } = require('./lib/mask');
 
+const keyvault = require('./lib/keyvault');
+
 const app = express();
-app.use(cors());
+
+// Detrás del proxy de Render/Cloudflare: confiar en X-Forwarded-* para obtener
+// la IP real del cliente (necesario para el rate-limit del login).
+app.set('trust proxy', 1);
+app.disable('x-powered-by');
+
+// Cabeceras de seguridad (equivalente ligero a helmet, sin dependencia extra).
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');                 // anti-clickjacking
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+  res.setHeader('Content-Security-Policy', "frame-ancestors 'none'");
+  // HSTS solo sobre HTTPS (producción) para no romper el desarrollo local.
+  if (auth.secureCookies()) {
+    res.setHeader('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
+  }
+  next();
+});
+
+// CORS restringido: por defecto NO se permite ningún origen cruzado (la UI es
+// del mismo origen y el bridge POS es servidor-a-servidor, sin CORS). Para
+// habilitar orígenes concretos, define SIM_CORS_ORIGINS (lista separada por comas).
+const corsOrigins = (process.env.SIM_CORS_ORIGINS || '')
+  .split(',').map(s => s.trim()).filter(Boolean);
+app.use(cors({ origin: corsOrigins.length ? corsOrigins : false }));
+
 app.use(express.json({ limit: '256kb' }));
 
 // --- Login / sesión ---
 app.post('/api/login', (req, res) => {
+  const ip = req.ip || req.socket?.remoteAddress || 'unknown';
+  const { allowed, retryAfterMs } = auth.checkRateLimit(ip);
+  if (!allowed) {
+    res.setHeader('Retry-After', Math.ceil(retryAfterMs / 1000));
+    return res.status(429).json({ ok: false, error: `demasiados intentos. Reintenta en ${Math.ceil(retryAfterMs / 60000)} min` });
+  }
   const { user, password } = req.body || {};
   if (!auth.checkCredentials(user, password)) {
+    auth.recordFailedAttempt(ip);
     return res.status(401).json({ ok: false, error: 'usuario o contraseña incorrectos' });
   }
+  auth.clearAttempts(ip);
   const token = auth.createSession(user || process.env.SIM_ADMIN_USER || 'admin');
   auth.setSessionCookie(res, token);
   res.json({ ok: true, user: user || 'admin' });
@@ -294,7 +330,7 @@ app.post('/api/send', async (req, res) => {
 // ambos corren en Render y no hay TCP público entre servicios.
 //   Entrada:  { hexMessage, profile?, encoding? }
 //   Salida:   { ok, responseHex, elapsedMs, responseCode }
-app.post('/api/pos-tcp', async (req, res) => {
+app.post('/api/pos-tcp', auth.requireBridgeKey, async (req, res) => {
   const { hexMessage, profile = 'generic', encoding = 'auto' } = req.body || {};
   if (!hexMessage) return res.status(400).json({ ok: false, error: 'hexMessage requerido' });
   const t0 = Date.now();
@@ -400,6 +436,17 @@ app.get('/api/stream', (req, res) => {
   const hb = setInterval(() => res.write(`:hb\n\n`), 15000);
   req.on('close', () => { off(); clearInterval(hb); });
 });
+
+// --- Avisos de seguridad al arranque ---
+if (!auth.isEnabled()) {
+  console.warn('⚠️  LOGIN DESHABILITADO: define SIM_ADMIN_PASS para proteger la UI/API.');
+}
+if (keyvault.usingDefaultSecret()) {
+  console.warn('⚠️  SIM_MASTER_KEY no definida: se usa la KEK de laboratorio (NO segura). Define SIM_MASTER_KEY en producción.');
+}
+if (!auth.secureCookies()) {
+  console.warn('ℹ️  Cookies sin flag Secure (desarrollo). En producción define NODE_ENV=production o SIM_SECURE_COOKIES=true.');
+}
 
 // --- Arrancar ambos servidores ---
 tcpServer.start();

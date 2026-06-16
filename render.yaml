@@ -22,6 +22,16 @@ services:
         value: "true"
       - key: SIM_PIN_EXPECTED
         value: "1234"
+      # Producción: cookies Secure + cabeceras HSTS.
+      - key: NODE_ENV
+        value: production
+      - key: SIM_SECURE_COOKIES
+        value: "true"
+      # Llave maestra y API key del bridge: definir en el dashboard (secretas).
+      - key: SIM_MASTER_KEY
+        sync: false
+      - key: SIM_BRIDGE_API_KEY
+        sync: false
       # Login de la UI/API. El login SOLO se activa si SIM_ADMIN_PASS tiene
       # valor; si se omite, la app queda en modo abierto (sin login).
       # Define ambas en el dashboard (no las pongas en texto plano en el repo).

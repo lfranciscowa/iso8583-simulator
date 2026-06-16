@@ -78,6 +78,37 @@ Pasos en Render:
 > puedes cambiarlo a `https://simulador.tesh-desarrollo.com/api/pos-tcp` una vez
 > que el dominio esté activo (la URL `.onrender.com` sigue funcionando igual).
 
+## 6) Endurecimiento de seguridad (servicio público)
+
+El simulador incluye protecciones activas por configuración. Define estas
+variables en Render → `iso8583-simulator` → **Environment**:
+
+| Variable | Valor | Para qué |
+|----------|-------|----------|
+| `SIM_ADMIN_USER` | tu usuario | Login de la UI/API |
+| `SIM_ADMIN_PASS` | contraseña fuerte | Activa el login |
+| `SIM_MASTER_KEY` | 64 hex aleatorios | Cifra el llavero en reposo |
+| `NODE_ENV` | `production` | Cookies `Secure` + HSTS |
+| `SIM_SECURE_COOKIES` | `true` | Fuerza cookies `Secure` |
+| `SIM_BRIDGE_API_KEY` | clave aleatoria | Protege `/api/pos-tcp` sin login |
+| `SIM_CORS_ORIGINS` | vacío (o tus orígenes) | Restringe CORS |
+
+Protecciones que ya trae el código:
+
+- **Anti fuerza bruta** en el login: 8 intentos fallidos por IP → bloqueo 15 min
+  (responde HTTP 429).
+- **Cabeceras de seguridad**: `X-Frame-Options: DENY` (anti-clickjacking),
+  `X-Content-Type-Options: nosniff`, CSP `frame-ancestors 'none'`, HSTS en HTTPS.
+- **CORS cerrado** por defecto (solo mismo origen).
+- **PAN/Track/PIN enmascarados** en historial, UI y exportaciones (DE2, DE35,
+  DE45, DE14, DE52).
+- **Cookie de sesión** `HttpOnly` + `SameSite=Strict` + `Secure` (en producción).
+
+> Si usas el bridge POS y defines `SIM_BRIDGE_API_KEY`, el POS (visual-admin)
+> debe enviar el header `x-api-key: <esa clave>` al llamar a `/api/pos-tcp`.
+> Si NO la defines, la ruta queda abierta (compatibilidad), pero protegida por
+> el resto de la red de Render.
+
 ## Notas
 
 - Plan free de Render duerme tras inactividad; la primera petición tarda ~30s.
