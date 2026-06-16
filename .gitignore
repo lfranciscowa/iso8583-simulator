@@ -1,6 +1,14 @@
 node_modules/
+
+# Variables de entorno con secretos: ignorar TODOS los .env* …
 .env
+.env.*
+# … excepto la plantilla pública (sin secretos).
+!.env.example
+
 *.log
+
+# Estado/datos generados en runtime (pueden contener llaves/PAN).
 config/rules.json
 config/scenarios.json
 config/bines.json
