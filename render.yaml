@@ -12,14 +12,20 @@ services:
     plan: free
     buildCommand: npm install
     startCommand: npm start
+    # Dominio propio. Render emite el certificado TLS automáticamente una vez
+    # que los registros DNS apuntan correctamente (ver DEPLOY-RENDER.md).
+    domains:
+      - simulador.tesh-desarrollo.com
     envVars:
       # Validación de PIN (DE52). Por defecto valida contra 1234 con tpk-demo.
       - key: SIM_PIN_VALIDATE
         value: "true"
       - key: SIM_PIN_EXPECTED
         value: "1234"
-      # Credenciales de la UI (si aplica login). Cámbialas en el dashboard.
-      # - key: SIM_LOGIN_USER
-      #   sync: false
-      # - key: SIM_LOGIN_PASS
-      #   sync: false
+      # Login de la UI/API. El login SOLO se activa si SIM_ADMIN_PASS tiene
+      # valor; si se omite, la app queda en modo abierto (sin login).
+      # Define ambas en el dashboard (no las pongas en texto plano en el repo).
+      - key: SIM_ADMIN_USER
+        sync: false
+      - key: SIM_ADMIN_PASS
+        sync: false
