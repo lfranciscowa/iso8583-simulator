@@ -215,7 +215,9 @@ textarea:focus{border-color:var(--cyan)}
     <button class="sidebar-toggle iconbtn" style="width:30px;height:30px;font-size:16px" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
     <div class="logo">🧪</div> ISO 8583 Simulator
   </div>
-  <div class="tcp-badge"><span class="dot"></span><span id="tcpInfo">TCP …</span></div>
+  <div class="topbar-right" style="display:flex;align-items:center;gap:14px">
+    <div class="tcp-badge"><span class="dot"></span><span id="tcpInfo">TCP …</span></div>
+  </div>
 </div>
 
 <div class="statusbar">
@@ -607,9 +609,9 @@ const $ = id => document.getElementById(id);
       const btn = document.createElement('button');
       btn.textContent = `Salir (${s.user})`;
       btn.className = 'btn-logout';
-      btn.style.cssText = 'position:fixed;top:10px;right:14px;z-index:1000;padding:6px 12px;border-radius:6px;border:1px solid #475569;background:#1e293b;color:#e2e8f0;cursor:pointer;font-size:12px';
+      btn.style.cssText = 'padding:6px 12px;border-radius:6px;border:1px solid #475569;background:#1e293b;color:#e2e8f0;cursor:pointer;font-size:12px;white-space:nowrap';
       btn.onclick = async () => { await fetch('/api/logout', { method: 'POST' }); location.href = '/login.html'; };
-      document.body.appendChild(btn);
+      (document.querySelector('.topbar-right') || document.body).appendChild(btn);
     }
   } catch (_) { /* ignorar */ }
 })();
