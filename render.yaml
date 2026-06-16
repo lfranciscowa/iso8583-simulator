@@ -15,8 +15,7 @@ services:
     # Dominio propio. Render emite el certificado TLS automáticamente una vez
     # que los registros DNS apuntan correctamente (ver DEPLOY-RENDER.md).
     domains:
-      - tesh-desarrollo.com
-      - www.tesh-desarrollo.com
+      - simulador.tesh-desarrollo.com
     envVars:
       # Validación de PIN (DE52). Por defecto valida contra 1234 con tpk-demo.
       - key: SIM_PIN_VALIDATE

@@ -50,31 +50,33 @@ Detecta `render.yaml` (rootDir: csr). Configura las variables:
 
 ## 5) Conectar el dominio propio (tesh-desarrollo.com) al SIMULADOR
 
-El `render.yaml` ya declara los dominios `tesh-desarrollo.com` y
-`www.tesh-desarrollo.com` para el servicio `iso8583-simulator`.
+Se usa el subdominio `simulador.tesh-desarrollo.com` para el simulador, de modo
+que el dominio raíz `tesh-desarrollo.com` queda libre para el POS u otro
+servicio. (Un mismo hostname NO puede estar en dos servicios de Render a la vez;
+por eso cada proyecto usa su propio subdominio.)
 
 Pasos en Render:
-1. Abre el servicio `iso8583-simulator` → **Settings → Custom Domains**.
-   Deben aparecer ya `tesh-desarrollo.com` y `www.tesh-desarrollo.com`
-   (en estado "Pending / verifying" hasta que el DNS apunte).
-2. Render te muestra a qué apuntar. Crea estos registros en el panel DNS de
-   tu proveedor del dominio (donde compraste tesh-desarrollo.com):
+1. Abre el servicio `iso8583-simulator` → **Settings → Custom Domains →
+   Add Custom Domain**. Escribe `simulador.tesh-desarrollo.com` → Save.
+2. Render te muestra el registro a crear. Créalo en el panel DNS de tu
+   proveedor del dominio (donde administras tesh-desarrollo.com):
 
-   - **Apex / raíz** `tesh-desarrollo.com`
-     - Registro **ALIAS / ANAME** → `iso8583-simulator-qchy.onrender.com`
-     - Si tu proveedor NO soporta ALIAS en el apex, usa un registro **A**
-       con la IP que te indique Render en esa misma pantalla.
-   - **www** `www.tesh-desarrollo.com`
-     - Registro **CNAME** → `iso8583-simulator-qchy.onrender.com`
+   - **Tipo** CNAME
+   - **Host / Nombre** `simulador`
+   - **Valor** `iso8583-simulator-qchy.onrender.com`
 
-3. Guarda y espera la propagación (de minutos a ~1 h). Cuando Render verifique
-   el DNS, emite el certificado TLS solo y el candado HTTPS queda activo.
-4. Verifica abriendo `https://tesh-desarrollo.com` → debe cargar la UI del
-   simulador.
+   > Si el DNS es Cloudflare: deja el registro en "DNS only" (nube gris), no
+   > proxied, para que Render pueda emitir el certificado TLS.
+
+3. Guarda y dale **Verify** en Render. La propagación puede tardar de minutos
+   a 24 h. Cuando Render verifique el DNS, emite el certificado TLS solo y el
+   candado HTTPS queda activo.
+4. Verifica abriendo `https://simulador.tesh-desarrollo.com` → debe cargar la
+   UI del simulador.
 
 > Nota: si el POS (visual-admin) apunta al simulador por `POS_BRIDGE_URL`,
-> puedes cambiarlo a `https://tesh-desarrollo.com/api/pos-tcp` una vez que el
-> dominio esté activo (la URL `.onrender.com` sigue funcionando igual).
+> puedes cambiarlo a `https://simulador.tesh-desarrollo.com/api/pos-tcp` una vez
+> que el dominio esté activo (la URL `.onrender.com` sigue funcionando igual).
 
 ## Notas
 
