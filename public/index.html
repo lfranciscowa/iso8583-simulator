@@ -1,0 +1,1557 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ISO 8583 Simulator</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b1020;--panel:#121a30;--panel2:#0f1729;--border:#243049;
+  --txt:#e6ebf5;--muted:#8b9bc0;--cyan:#22d3ee;--green:#34d399;--red:#f87171;
+  --amber:#fbbf24;--indigo:#818cf8;--mono:'IBM Plex Mono',monospace;--sans:'Sora',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--txt);min-height:100vh}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;
+  border-bottom:1px solid var(--border);background:var(--panel2);position:sticky;top:0;z-index:10}
+.brand{display:flex;align-items:center;gap:12px;font-weight:800;font-size:16px}
+.logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--cyan),var(--indigo));
+  display:flex;align-items:center;justify-content:center;font-size:18px}
+.tcp-badge{font-family:var(--mono);font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
+.wrap{display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:22px 24px;max-width:1400px;margin:0 auto}
+@media(max-width:920px){.wrap{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.card-h{padding:14px 18px;border-bottom:1px solid var(--border);font-weight:700;font-size:14px;
+  display:flex;align-items:center;justify-content:space-between}
+.card-b{padding:18px}
+label{display:block;font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;
+  letter-spacing:.04em;margin-bottom:6px}
+input,select{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:8px;
+  background:var(--panel2);color:var(--txt);font-family:var(--mono);font-size:13px;outline:none}
+input:focus,select:focus{border-color:var(--cyan)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px}
+.field{margin-bottom:14px}
+.btn{padding:11px 20px;border:none;border-radius:9px;font-family:var(--sans);font-weight:700;
+  font-size:13px;cursor:pointer;transition:.15s}
+.btn-go{background:linear-gradient(135deg,var(--cyan),var(--indigo));color:#06121f;width:100%}
+.btn-go:hover{filter:brightness(1.1)}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}
+.hex{font-family:var(--mono);font-size:12px;word-break:break-all;line-height:1.7;color:var(--cyan);
+  background:var(--panel2);padding:12px;border-radius:8px;border:1px solid var(--border)}
+.kv{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);
+  font-family:var(--mono);font-size:12.5px}
+.kv:last-child{border-bottom:none}
+.kv .k{color:var(--muted)}
+.badge{padding:3px 10px;border-radius:100px;font-size:11px;font-weight:700;font-family:var(--mono)}
+.badge.ok{background:rgba(52,211,153,.15);color:var(--green)}
+.badge.no{background:rgba(248,113,113,.15);color:var(--red)}
+.feed{max-height:520px;overflow-y:auto}
+.feed-item{padding:11px 14px;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:12px;
+  display:flex;align-items:center;gap:10px;animation:fade .3s}
+@keyframes fade{from{opacity:0;transform:translateX(-6px)}to{opacity:1}}
+.tag{padding:2px 7px;border-radius:5px;font-size:10px;font-weight:600}
+.tag.ascii{background:rgba(129,140,248,.18);color:var(--indigo)}
+.tag.ebcdic{background:rgba(251,191,36,.18);color:var(--amber)}
+.muted{color:var(--muted)}
+.rules{font-size:12px;color:var(--muted);line-height:1.8;font-family:var(--mono)}
+.rules b{color:var(--amber)}
+.empty{padding:40px;text-align:center;color:var(--muted);font-size:13px}
+h4{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:16px 0 8px}
+.rule{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.rule:last-child{border-bottom:none}
+.rule-main{flex:1;min-width:0}
+.rule-desc{font-size:13px;color:var(--txt);font-weight:600}
+.rule-cond{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:3px;word-break:break-word}
+.rc{font-family:var(--mono);font-weight:700;padding:3px 9px;border-radius:7px;font-size:11px;flex-shrink:0}
+.rc.ok{background:rgba(52,211,153,.15);color:var(--green)}
+.rc.no{background:rgba(248,113,113,.15);color:var(--red)}
+.rule-acts{display:flex;gap:6px;flex-shrink:0}
+.iconbtn{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;
+  width:26px;height:26px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center}
+.iconbtn:hover{border-color:var(--cyan);color:var(--cyan)}
+.editor{background:var(--panel2);border:1px solid var(--cyan);border-radius:10px;padding:14px;margin-top:6px}
+.cond-row{display:grid;grid-template-columns:1fr 1.3fr 1fr auto;gap:6px;margin-bottom:7px;align-items:center}
+.cond-row .iconbtn{width:30px;height:32px}
+.editor input,.editor select{padding:7px 9px;font-size:12px}
+.editor-actions{display:flex;gap:8px;margin-top:12px}
+.editor-actions .btn{padding:8px 16px;font-size:12px;width:auto}
+.frow{display:grid;grid-template-columns:minmax(150px,1.2fr) 1.6fr auto;gap:8px;margin-bottom:8px;align-items:center}
+.frow select,.frow input{font-size:12px}
+.frow .iconbtn{width:30px;height:34px}
+.fhint{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:2px}
+textarea{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:8px;background:var(--panel2);
+  color:var(--cyan);font-family:var(--mono);font-size:12px;outline:none;resize:vertical;line-height:1.6}
+textarea:focus{border-color:var(--cyan)}
+.linkbtn{background:none;border:none;color:var(--indigo);font-size:10px;cursor:pointer;font-family:var(--sans);
+  font-weight:600;padding:0 2px;text-transform:none;letter-spacing:0}
+.linkbtn:hover{color:var(--cyan);text-decoration:underline}
+.cmp-sum{font-family:var(--mono);font-size:12px;margin:12px 0 8px;display:flex;gap:14px;flex-wrap:wrap}
+.cmp-hex{font-family:var(--mono);font-size:12px;line-height:1.9;word-break:break-all;background:var(--panel2);
+  border:1px solid var(--border);border-radius:8px;padding:10px}
+.bb{padding:1px 2px;border-radius:3px}
+.insp-field{display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;
+  border-bottom:1px solid var(--border);font-family:var(--mono);font-size:12px}
+.insp-field:last-child{border-bottom:none}
+.insp-de{color:var(--muted);flex-shrink:0;width:120px}
+.insp-name{color:var(--amber);font-size:10px;flex:1;padding:0 8px}
+.insp-val{color:var(--cyan);word-break:break-all;text-align:right;max-width:200px}
+.hist-item{padding:9px 12px;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px;
+  display:flex;align-items:center;gap:8px;cursor:pointer}
+.hist-item:hover{background:var(--panel2)}
+.hist-src{padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;text-transform:uppercase}
+.hist-src.ui{background:rgba(129,140,248,.18);color:var(--indigo)}
+.hist-src.tcp{background:rgba(52,211,153,.18);color:var(--green)}
+.export-bar{display:flex;gap:8px;padding:10px 14px;border-top:1px solid var(--border);background:var(--panel2)}
+.bb.same{color:var(--muted)}
+.bb.diff{background:rgba(248,113,113,.22);color:#fecaca;font-weight:700}
+.bb.extra{background:rgba(251,191,36,.18);color:var(--amber)}
+/* ---- Dashboard de métricas ---- */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+@media(max-width:920px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:16px 14px}
+.kpi-val{font-family:var(--mono);font-size:26px;font-weight:700;line-height:1.1}
+.kpi-val.green{color:var(--green)}.kpi-val.red{color:var(--red)}.kpi-val.cyan{color:var(--cyan)}.kpi-val.amber{color:var(--amber)}
+.kpi-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:6px;font-weight:600}
+.kpi-sub{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:3px}
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:920px){.dash-grid{grid-template-columns:1fr}}
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:9px;font-family:var(--mono);font-size:12px}
+.bar-lbl{min-width:42px;text-align:right;font-weight:600}
+.bar-name{min-width:128px;color:var(--muted);font-size:10px}
+.bar-track{flex:1;height:11px;background:var(--panel2);border-radius:6px;overflow:hidden;border:1px solid var(--border)}
+.bar-fill{height:100%;border-radius:6px;transition:width .4s}
+.bar-fill.green{background:var(--green)}.bar-fill.red{background:var(--red)}.bar-fill.amber{background:var(--amber)}.bar-fill.cyan{background:var(--cyan)}.bar-fill.indigo{background:var(--indigo)}
+.bar-cnt{min-width:60px;text-align:right;color:var(--muted)}
+.lat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.lat-box{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center}
+.lat-val{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--cyan)}
+.lat-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;margin-top:4px;letter-spacing:.04em}
+/* ---- Modo batch ---- */
+.batch-pick{display:flex;flex-direction:column;gap:7px;max-height:280px;overflow-y:auto;margin-bottom:14px}
+.batch-opt{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--border);border-radius:9px;
+  background:var(--panel2);cursor:pointer;font-size:13px}
+.batch-opt:hover{border-color:var(--cyan)}
+.batch-opt input{width:auto}
+.batch-opt .b-name{flex:1;font-weight:600}
+.batch-opt .b-meta{font-family:var(--mono);font-size:10px;color:var(--muted)}
+.batch-ctrl{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.batch-ctrl .btn{width:auto}
+.batch-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px}
+.batch-table th{text-align:left;color:var(--muted);font-weight:600;font-size:10px;text-transform:uppercase;
+  padding:7px 9px;border-bottom:1px solid var(--border)}
+.batch-table td{padding:8px 9px;border-bottom:1px solid var(--border)}
+.batch-table tr.run{background:rgba(34,211,238,.06)}
+.batch-row-st{width:22px;text-align:center}
+.b-stat{padding:2px 8px;border-radius:100px;font-size:10px;font-weight:700}
+.b-stat.ok{background:rgba(52,211,153,.15);color:var(--green)}
+.b-stat.no{background:rgba(248,113,113,.15);color:var(--red)}
+.b-stat.run{background:rgba(34,211,238,.15);color:var(--cyan)}
+.b-stat.wait{background:rgba(139,155,192,.15);color:var(--muted)}
+.batch-sum{display:flex;gap:18px;flex-wrap:wrap;font-family:var(--mono);font-size:13px;margin:14px 0;
+  padding:12px 14px;background:var(--panel2);border:1px solid var(--border);border-radius:10px}
+.tabbar{display:flex;gap:4px;padding:0 24px;background:var(--panel2);border-bottom:1px solid var(--border);
+  overflow-x:auto}
+.tab{background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);
+  font-family:var(--sans);font-weight:600;font-size:13px;padding:14px 16px;cursor:pointer;white-space:nowrap}
+.tab:hover{color:var(--txt)}
+.tab.active{color:var(--cyan);border-bottom-color:var(--cyan)}
+.tabpanel{display:none;padding:22px 24px;max-width:1400px;margin:0 auto}
+.tabpanel.active{display:block}
+.tabpanel.wrap.active{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.tabpanel.single{max-width:900px}
+@media(max-width:920px){.tabpanel.wrap.active{grid-template-columns:1fr}}
+
+/* ---- Layout: sidebar + contenido ---- */
+.layout{display:flex;min-height:calc(100vh - 49px)}
+.sidebar{width:220px;flex-shrink:0;background:var(--panel2);border-right:1px solid var(--border);
+  padding:14px 10px;position:sticky;top:49px;align-self:flex-start;height:calc(100vh - 49px);overflow-y:auto}
+.nav-group{margin-bottom:14px}
+.nav-group-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;
+  font-weight:700;padding:6px 12px;opacity:.7}
+.nav-item{display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;
+  color:var(--muted);font-family:var(--sans);font-weight:600;font-size:13px;padding:9px 12px;
+  border-radius:8px;cursor:pointer;text-align:left;margin-bottom:2px}
+.nav-item:hover{color:var(--txt);background:rgba(255,255,255,.04)}
+.nav-item.active{color:var(--cyan);background:rgba(34,211,238,.10)}
+.main{flex:1;min-width:0}
+.sidebar-toggle{display:none}
+@media(max-width:820px){
+  .sidebar{position:fixed;left:0;top:49px;z-index:40;transform:translateX(-100%);transition:.2s;
+    box-shadow:6px 0 24px rgba(0,0,0,.4);width:230px}
+  .sidebar.open{transform:translateX(0)}
+  .sidebar-toggle{display:inline-flex}
+}
+
+/* ---- Barra de estado superior ---- */
+.statusbar{display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:10px 24px;
+  background:var(--panel);border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.statusbar .stat{display:flex;align-items:center;gap:6px}
+.statusbar .stat b{color:var(--txt);font-weight:600}
+.statusbar .sep{width:1px;height:14px;background:var(--border)}
+
+/* ---- Toasts ---- */
+.toast-wrap{position:fixed;bottom:18px;right:18px;display:flex;flex-direction:column;gap:8px;z-index:9999}
+.toast{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--cyan);
+  border-radius:8px;padding:11px 16px;font-size:13px;min-width:220px;box-shadow:0 8px 24px rgba(0,0,0,.4);
+  animation:toast-in .25s}
+.toast.ok{border-left-color:var(--green)}
+.toast.err{border-left-color:var(--red)}
+@keyframes toast-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* ---- Visor de trama coloreado ---- */
+.framepart{padding:1px 2px;border-radius:3px;cursor:default}
+.framepart.mti{background:rgba(129,140,248,.25);color:#c7d2fe}
+.framepart.bitmap{background:rgba(251,191,36,.20);color:var(--amber)}
+.framepart.de{background:rgba(34,211,238,.14);color:var(--cyan)}
+.framepart.de:nth-child(odd){background:rgba(52,211,153,.12);color:var(--green)}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand">
+    <button class="sidebar-toggle iconbtn" style="width:30px;height:30px;font-size:16px" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+    <div class="logo">🧪</div> ISO 8583 Simulator
+  </div>
+  <div class="tcp-badge"><span class="dot"></span><span id="tcpInfo">TCP …</span></div>
+</div>
+
+<div class="statusbar">
+  <div class="stat">🟢 Switch <b id="stStatus">activo</b></div>
+  <div class="sep"></div>
+  <div class="stat">Perfil <b id="stProfile">generic</b></div>
+  <div class="sep"></div>
+  <div class="stat">Encoding <b id="stEncoding">ascii</b></div>
+  <div class="sep"></div>
+  <div class="stat">TX sesión <b id="stTxCount">0</b></div>
+</div>
+
+<div class="layout">
+<aside class="sidebar">
+  <div class="nav-group">
+    <div class="nav-group-lbl">Operación</div>
+    <button class="nav-item active" data-tab="simulador" onclick="showTab('simulador')">▶ Simulador</button>
+    <button class="nav-item" data-tab="batch" onclick="showTab('batch')">📦 Batch</button>
+    <button class="nav-item" data-tab="historial" onclick="showTab('historial')">📋 Historial</button>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-lbl">Análisis</div>
+    <button class="nav-item" data-tab="dashboard" onclick="showTab('dashboard')">📊 Dashboard</button>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-lbl">Configuración</div>
+    <button class="nav-item" data-tab="reglas" onclick="showTab('reglas')">⚙ Reglas</button>
+    <button class="nav-item" data-tab="escenarios" onclick="showTab('escenarios')">📁 Escenarios</button>
+    <button class="nav-item" data-tab="bines" onclick="showTab('bines')">💳 BINes</button>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-lbl">Seguridad</div>
+    <button class="nav-item" data-tab="cripto" onclick="showTab('cripto')">🔐 Cripto</button>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-lbl">Utilidades</div>
+    <button class="nav-item" data-tab="herramientas" onclick="showTab('herramientas')">🔧 Herramientas</button>
+  </div>
+</aside>
+<div class="main">
+
+<!-- ================= TAB: SIMULADOR ================= -->
+<div class="tabpanel wrap active" id="tab-simulador">
+  <div>
+    <div class="card">
+      <div class="card-h">Armar transacción
+        <button class="btn btn-ghost" style="padding:6px 12px;font-size:11px" onclick="agregarCampo()">+ Campo</button>
+      </div>
+      <div class="card-b">
+        <div class="field"><label>Perfil de red</label>
+          <select id="profile" onchange="cambiarPerfil()"></select>
+        </div>
+        <div class="row">
+          <div><label>MTI</label><input id="mti" value="0200"></div>
+          <div><label>Encoding</label>
+            <select id="encoding"><option value="ascii">ASCII</option><option value="ebcdic">EBCDIC</option></select>
+          </div>
+        </div>
+        <label>Data Elements</label>
+        <div id="fieldsList"></div>
+        <button class="btn btn-go" style="margin-top:6px" onclick="enviar()">▶ Enviar al switch simulado</button>
+      </div>
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <div class="card-h">Resultado <span id="resBadge"></span></div>
+      <div class="card-b" id="result"><div class="empty">Enviá una transacción para ver request y response.</div></div>
+    </div>
+    <div class="card" style="margin-top:18px">
+      <div class="card-h">Tráfico TCP en vivo <span class="muted" style="font-size:11px;font-weight:400">:8583</span></div>
+      <div class="feed" id="feed"><div class="empty">Esperando conexiones externas…</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= TAB: REGLAS ================= -->
+<div class="tabpanel single" id="tab-reglas">
+  <div class="card">
+    <div class="card-h">Reglas del switch
+      <span style="display:flex;gap:8px">
+        <button class="btn btn-ghost" style="padding:6px 12px;font-size:11px" onclick="nuevaRegla()">+ Nueva</button>
+        <button class="btn btn-ghost" style="padding:6px 12px;font-size:11px" onclick="resetReglas()">↺ Reset</button>
+      </span>
+    </div>
+    <div class="card-b">
+      <div id="rulesList"></div>
+      <div id="ruleEditor" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= TAB: ESCENARIOS ================= -->
+<div class="tabpanel single" id="tab-escenarios">
+  <div class="card">
+    <div class="card-h">Escenarios de prueba
+      <button class="btn btn-ghost" style="padding:6px 12px;font-size:11px" onclick="resetEscenarios()">↺ Reset</button>
+    </div>
+    <div class="card-b">
+      <div class="row" style="margin-bottom:10px">
+        <div><label>Cargar escenario</label>
+          <select id="scenarioSel"></select>
+        </div>
+        <div style="display:flex;align-items:flex-end;gap:6px">
+          <button class="btn btn-ghost" style="width:auto;padding:9px 14px;font-size:12px" onclick="cargarEscenario()">Cargar</button>
+          <button class="btn btn-ghost" style="width:auto;padding:9px 14px;font-size:12px" onclick="borrarEscenario()" title="Borrar">🗑</button>
+        </div>
+      </div>
+      <button class="btn btn-go" style="font-size:12px" onclick="guardarEscenario()">💾 Guardar transacción actual como escenario</button>
+      <p class="muted" style="font-size:12px;margin-top:12px">Cargá un escenario y andá a la pestaña <b>Simulador</b> para enviarlo.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ================= TAB: HERRAMIENTAS ================= -->
+<div class="tabpanel wrap" id="tab-herramientas">
+  <div>
+    <div class="card">
+      <div class="card-h">Inspector de tramas
+        <span class="muted" style="font-size:11px;font-weight:400">pegá cualquier hex</span>
+      </div>
+      <div class="card-b">
+        <div class="row" style="margin-bottom:10px">
+          <div><label>Perfil</label>
+            <select id="inspProfile">
+              <option value="generic">Genérico</option>
+              <option value="visa">Visa</option>
+              <option value="mastercard">Mastercard</option>
+            </select>
+          </div>
+          <div><label>Encoding</label>
+            <select id="inspEncoding">
+              <option value="auto">Auto</option>
+              <option value="ascii">ASCII</option>
+              <option value="ebcdic">EBCDIC</option>
+            </select>
+          </div>
+        </div>
+        <label>Hex de la trama
+          <button class="linkbtn" onclick="inspUsarUltimo('request')">⇦ último request</button>
+          <button class="linkbtn" onclick="inspUsarUltimo('response')">⇦ último response</button>
+        </label>
+        <textarea id="inspHex" rows="3" placeholder="003B6000500100020..."></textarea>
+        <button class="btn btn-go" style="margin-top:10px;font-size:12px" onclick="inspeccionar()">🔍 Inspeccionar</button>
+        <div id="inspResult"></div>
+      </div>
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <div class="card-h">Comparador de tramas
+        <span class="muted" style="font-size:11px;font-weight:400">diff byte a byte</span>
+      </div>
+      <div class="card-b">
+        <label>Trama A (hex)
+          <button class="linkbtn" onclick="usarUltimo('A','request')">⇦ último request</button>
+          <button class="linkbtn" onclick="usarUltimo('A','response')">⇦ último response</button>
+        </label>
+        <textarea id="cmpA" rows="3" placeholder="003B6000..."></textarea>
+        <label style="margin-top:10px">Trama B (hex)
+          <button class="linkbtn" onclick="usarUltimo('B','request')">⇦ último request</button>
+          <button class="linkbtn" onclick="usarUltimo('B','response')">⇦ último response</button>
+        </label>
+        <textarea id="cmpB" rows="3" placeholder="0040..."></textarea>
+        <button class="btn btn-go" style="margin-top:12px;font-size:12px" onclick="comparar()">⇄ Comparar</button>
+        <div id="cmpResult"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= TAB: HISTORIAL ================= -->
+<div class="tabpanel single" id="tab-historial">
+  <div class="card">
+    <div class="card-h">Historial de transacciones
+      <span style="display:flex;gap:8px;align-items:center">
+        <span id="histCount" class="muted" style="font-size:11px;font-weight:400">0 tx</span>
+        <button class="btn btn-ghost" style="padding:5px 10px;font-size:11px" onclick="limpiarHistorial()">✕ Limpiar</button>
+      </span>
+    </div>
+    <div class="feed" id="histFeed" style="max-height:520px"><div class="empty">Sin transacciones aún.</div></div>
+    <div class="export-bar">
+      <a id="expCsv" class="btn btn-ghost" style="padding:7px 14px;font-size:11px;text-decoration:none" href="/api/history/export?format=csv" download="iso8583-history.csv">⬇ CSV</a>
+      <a id="expJson" class="btn btn-ghost" style="padding:7px 14px;font-size:11px;text-decoration:none" href="/api/history/export?format=json" download="iso8583-history.json">⬇ JSON</a>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== DASHBOARD ===================== -->
+<div class="tabpanel single" id="tab-dashboard" style="max-width:1100px">
+  <div class="card">
+    <div class="card-h">Dashboard de métricas
+      <span style="display:flex;gap:8px;align-items:center">
+        <span id="dashScope" class="muted" style="font-size:11px;font-weight:400">basado en el historial</span>
+        <button class="btn btn-ghost" style="padding:5px 10px;font-size:11px" onclick="loadDashboard()">↻ Refrescar</button>
+      </span>
+    </div>
+    <div class="card-b">
+      <div id="dashBody"><div class="empty">Sin datos todavía. Enviá transacciones para ver las métricas.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== BATCH ===================== -->
+<div class="tabpanel single" id="tab-batch" style="max-width:1100px">
+  <div class="card">
+    <div class="card-h">Modo batch · correr escenarios en secuencia
+      <button class="btn btn-ghost" style="padding:5px 10px;font-size:11px" onclick="loadBatchScenarios()">↻ Recargar escenarios</button>
+    </div>
+    <div class="card-b">
+      <label>Escenarios a ejecutar</label>
+      <div class="batch-pick" id="batchPick"><div class="empty">Cargando escenarios…</div></div>
+      <div class="batch-ctrl">
+        <button class="btn btn-ghost" style="padding:7px 12px;font-size:11px" onclick="batchSelectAll(true)">Seleccionar todos</button>
+        <button class="btn btn-ghost" style="padding:7px 12px;font-size:11px" onclick="batchSelectAll(false)">Ninguno</button>
+        <label style="margin:0 0 0 8px;text-transform:none;letter-spacing:0">Repeticiones</label>
+        <input id="batchRepeat" type="number" min="1" max="50" value="1" style="width:70px">
+        <button class="btn btn-go" id="batchRunBtn" style="width:auto;padding:9px 22px" onclick="runBatch()">▶ Ejecutar batch</button>
+        <button class="btn btn-ghost" id="batchStopBtn" style="width:auto;padding:9px 18px;display:none" onclick="stopBatch()">⏹ Detener</button>
+      </div>
+      <div id="batchSummary"></div>
+      <div id="batchResults"></div>
+      <div class="export-bar" id="batchExportBar" style="display:none;border-radius:10px;border:1px solid var(--border);margin-top:14px">
+        <button class="btn btn-ghost" style="padding:7px 14px;font-size:11px" onclick="exportBatch('csv')">⬇ CSV</button>
+        <button class="btn btn-ghost" style="padding:7px 14px;font-size:11px" onclick="exportBatch('json')">⬇ JSON</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== BINES ===================== -->
+<div class="tabpanel single" id="tab-bines" style="max-width:1100px">
+  <div class="card">
+    <div class="card-h">Catálogo de BINes
+      <span style="display:flex;gap:8px;align-items:center">
+        <span id="binCount" class="muted" style="font-size:11px;font-weight:400">0 bines</span>
+        <button class="btn btn-ghost" style="padding:5px 10px;font-size:11px" onclick="resetBines()">↺ Restaurar</button>
+      </span>
+    </div>
+    <div class="card-b">
+      <div class="batch-ctrl" style="margin-bottom:12px">
+        <input id="binFilter" placeholder="Filtrar por BIN, banco o marca…" oninput="renderBines()" style="flex:1;min-width:200px">
+        <select id="binBrandFilter" onchange="renderBines()" style="width:auto">
+          <option value="">Todas las marcas</option>
+          <option value="visa">Visa</option>
+          <option value="mastercard">Mastercard</option>
+          <option value="amex">Amex</option>
+          <option value="discover">Discover</option>
+          <option value="maestro">Maestro</option>
+          <option value="otra">Otra</option>
+        </select>
+      </div>
+      <div style="overflow-x:auto"><table class="batch-table" id="binTable">
+        <thead><tr><th>BIN</th><th>Marca</th><th>Banco emisor</th><th>Tipo</th><th>Long.</th><th>Descripción</th><th></th></tr></thead>
+        <tbody id="binTbody"></tbody>
+      </table></div>
+
+      <h4 style="margin-top:20px">Agregar BIN</h4>
+      <div class="batch-ctrl" style="align-items:flex-end">
+        <div style="width:110px"><label>BIN</label><input id="newBin" placeholder="411111" maxlength="8"></div>
+        <div style="width:130px"><label>Marca</label>
+          <select id="newBrand">
+            <option value="visa">Visa</option><option value="mastercard">Mastercard</option>
+            <option value="amex">Amex</option><option value="discover">Discover</option>
+            <option value="maestro">Maestro</option><option value="otra">Otra</option>
+          </select>
+        </div>
+        <div style="width:140px"><label>Perfil</label>
+          <select id="newBinProfile"><option value="generic">generic</option><option value="visa">visa</option><option value="mastercard">mastercard</option></select>
+        </div>
+        <div style="width:80px"><label>Long.</label><input id="newLen" type="number" min="12" max="19" value="16"></div>
+        <div style="width:110px"><label>Tipo</label>
+          <select id="newType"><option value="credito">crédito</option><option value="debito">débito</option></select>
+        </div>
+        <div style="flex:1;min-width:150px"><label>Banco / desc.</label><input id="newBank" placeholder="Banco emisor"></div>
+        <button class="btn btn-go" style="width:auto;padding:9px 20px" onclick="guardarBin()">+ Agregar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== CRIPTO ===================== -->
+<div class="tabpanel wrap" id="tab-cripto">
+  <!-- Columna izquierda: Llavero -->
+  <div class="card">
+    <div class="card-h">🔑 Llavero criptográfico
+      <span style="display:flex;gap:8px;align-items:center">
+        <span id="keyCount" class="muted" style="font-size:11px;font-weight:400">0 llaves</span>
+        <button class="btn btn-ghost" style="padding:5px 10px;font-size:11px" onclick="resetKeys()">↺ Restaurar</button>
+      </span>
+    </div>
+    <div class="card-b">
+      <div id="keyList"><div class="empty">Cargando llaves…</div></div>
+      <h4>Cargar / generar llave 3DES</h4>
+      <div class="row">
+        <div><label>Nombre</label><input id="kName" placeholder="ZPK producción"></div>
+        <div><label>Tipo</label><select id="kType"></select></div>
+      </div>
+      <div class="field">
+        <label>Valor de la llave (hex · 16/32/48)</label>
+        <input id="kHex" placeholder="0123456789ABCDEF... (32 hex = doble longitud)">
+        <div class="fhint" id="kKcvHint">KCV se calcula al cargar</div>
+      </div>
+      <div class="editor-actions">
+        <button class="btn btn-go" style="width:auto" onclick="guardarKey()">+ Cargar llave</button>
+        <button class="btn btn-ghost" style="width:auto" onclick="generarKey()">🎲 Generar 2-key</button>
+        <button class="btn btn-ghost" style="width:auto" onclick="calcularKcv()">KCV</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Columna derecha: PIN block tools -->
+  <div class="card">
+    <div class="card-h">🔐 PIN block · cifrar / verificar</div>
+    <div class="card-b">
+      <div class="row">
+        <div><label>PIN</label><input id="pbPin" value="1234" maxlength="12"></div>
+        <div><label>Formato ISO 9564</label>
+          <select id="pbFormat"><option value="0">Formato 0 (ANSI X9.8)</option><option value="1">Formato 1</option><option value="3">Formato 3</option></select>
+        </div>
+      </div>
+      <div class="field"><label>PAN (DE2)</label>
+        <input id="pbPan" value="4111113054813216">
+        <div class="fhint"><button class="linkbtn" onclick="pbUsarPanSimulador()">usar PAN del simulador</button></div>
+      </div>
+      <div class="field"><label>Llave (PEK / ZPK)</label>
+        <select id="pbKey"></select>
+      </div>
+      <div class="editor-actions" style="margin-bottom:10px">
+        <button class="btn btn-go" style="width:auto" onclick="cifrarPin()">🔒 Cifrar PIN</button>
+        <button class="btn btn-ghost" style="width:auto" onclick="pbEnviarDe52()">→ Cargar en DE52</button>
+      </div>
+      <div id="pbResult"></div>
+
+      <h4 style="margin-top:18px">Verificar / descifrar PIN block</h4>
+      <div class="field"><label>PIN block cifrado (hex)</label>
+        <input id="pbEnc" placeholder="16 hex (8 bytes)">
+      </div>
+      <div class="row">
+        <div><label>PIN esperado (opcional)</label><input id="pbExpected" placeholder="1234"></div>
+        <div style="display:flex;align-items:flex-end;gap:8px">
+          <button class="btn btn-go" style="width:auto" onclick="verificarPin()">✔ Verificar</button>
+        </div>
+      </div>
+      <div id="pbVerifyResult"></div>
+    </div>
+  </div>
+
+  <!-- MAC: a todo el ancho -->
+  <div class="card" style="grid-column:1/-1">
+    <div class="card-h">🔏 MAC · Retail MAC (ISO 9797-1 Alg 3 / ANSI X9.19) → DE64/DE128</div>
+    <div class="card-b">
+      <div class="field"><label>Datos a autenticar (hex)</label>
+        <textarea id="macData" rows="2" placeholder="MTI + bitmap + campos… (lo que va antes del MAC)"></textarea>
+        <div class="fhint"><button class="linkbtn" onclick="macUsarRequest()">usar el último Request HEX</button> · el MAC se calcula sobre estos bytes</div>
+      </div>
+      <div class="row">
+        <div><label>Llave MAC</label><select id="macKey"></select></div>
+        <div style="display:flex;align-items:flex-end;gap:8px">
+          <button class="btn btn-go" style="width:auto" onclick="calcularMac()">🔏 Calcular MAC</button>
+          <button class="btn btn-ghost" style="width:auto" onclick="macEnviarDe64()">→ Cargar en DE64</button>
+        </div>
+      </div>
+      <div id="macResult"></div>
+
+      <h4 style="margin-top:16px">Verificar MAC recibido</h4>
+      <div class="row">
+        <div><label>MAC recibido (hex)</label><input id="macRecv" placeholder="16 hex (8 bytes)"></div>
+        <div style="display:flex;align-items:flex-end"><button class="btn btn-go" style="width:auto" onclick="verificarMac()">✔ Verificar MAC</button></div>
+      </div>
+      <div id="macVerifyResult"></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /.main -->
+</div><!-- /.layout -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+// --- Sesión: si el login está habilitado y no hay sesión, redirigir ---
+(async () => {
+  try {
+    const s = await fetch('/api/session').then(r => r.json());
+    if (s.enabled && !s.authenticated) { location.href = '/login.html'; return; }
+    if (s.enabled) {
+      const btn = document.createElement('button');
+      btn.textContent = `Salir (${s.user})`;
+      btn.className = 'btn-logout';
+      btn.style.cssText = 'position:fixed;top:10px;right:14px;z-index:1000;padding:6px 12px;border-radius:6px;border:1px solid #475569;background:#1e293b;color:#e2e8f0;cursor:pointer;font-size:12px';
+      btn.onclick = async () => { await fetch('/api/logout', { method: 'POST' }); location.href = '/login.html'; };
+      document.body.appendChild(btn);
+    }
+  } catch (_) { /* ignorar */ }
+})();
+
+// Si cualquier llamada a la API devuelve 401, mandar a login.
+const _fetch = window.fetch;
+window.fetch = async (...args) => {
+  const r = await _fetch(...args);
+  if (r.status === 401 && String(args[0]).startsWith('/api')) location.href = '/login.html';
+  return r;
+};
+
+// --- Toasts (reemplazo de alert()) ---
+function toast(msg, type=''){
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  $('toastWrap').appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+// --- Barra de estado superior ---
+let txCount = 0;
+function bumpTxCount(){ txCount++; $('stTxCount').textContent = txCount; }
+function setStatusBar({profile, encoding} = {}){
+  if(profile) $('stProfile').textContent = profile;
+  if(encoding) $('stEncoding').textContent = encoding;
+}
+
+function showTab(name){
+  document.querySelectorAll('.tabpanel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
+  $('tab-'+name).classList.add('active');
+  document.querySelector('.sidebar').classList.remove('open');
+  if(name==='historial') loadHistorial();
+  if(name==='dashboard') loadDashboard();
+  if(name==='batch') loadBatchScenarios();
+  if(name==='bines') loadBines();
+  if(name==='cripto') loadCripto();
+}
+
+// ===================== CRIPTO =====================
+let KEYS = [];
+let KEY_TYPES = [];
+
+async function loadCripto(){
+  const d = await fetch('/api/keys').then(r=>r.json()).catch(()=>({keys:[],types:[]}));
+  KEYS = d.keys||[]; KEY_TYPES = d.types||[];
+  if($('kType').options.length===0)
+    $('kType').innerHTML = KEY_TYPES.map(t=>`<option value="${t}">${t}</option>`).join('');
+  renderKeys();
+  renderKeySelect();
+}
+
+function renderKeys(){
+  $('keyCount').textContent = KEYS.length+' llaves';
+  if(!KEYS.length){ $('keyList').innerHTML='<div class="empty">Sin llaves. Cargá o generá una abajo.</div>'; return; }
+  $('keyList').innerHTML = KEYS.map(k=>`
+    <div class="rule">
+      <div class="rule-main">
+        <div class="rule-desc">${esc(k.name)} <span class="tag" style="background:rgba(34,211,238,.15);color:var(--cyan)">${esc(k.type)}</span></div>
+        <div class="rule-cond">${esc(k.keyHex)}<br>KCV <b style="color:var(--amber)">${esc(k.kcv)}</b> · ${k.bytes} bytes${k.desc?' · '+esc(k.desc):''}</div>
+      </div>
+      <div class="rule-acts">
+        <button class="iconbtn" title="Usar para cifrar" onclick="usarKeyEnPin('${esc(k.id)}')">🔒</button>
+        <button class="iconbtn" title="Borrar" onclick="borrarKey('${esc(k.id)}')">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function renderKeySelect(){
+  const opts = KEYS.map(k=>`<option value="${esc(k.id)}">${esc(k.name)} · ${esc(k.type)} · KCV ${esc(k.kcv)}</option>`).join('')
+    || '<option value="">(sin llaves)</option>';
+  $('pbKey').innerHTML = opts;
+  if($('macKey')) $('macKey').innerHTML = opts;
+}
+
+// ----- MAC -----
+function macUsarRequest(){
+  if(!lastTx.request){ toast('Todavía no enviaste una transacción en el Simulador.', 'err'); return; }
+  $('macData').value = lastTx.request;
+}
+
+let lastMac = '';
+async function calcularMac(){
+  const dataHex = $('macData').value.trim();
+  if(!dataHex){ toast('Pegá los datos a autenticar en hex.', 'err'); return; }
+  const d = await fetch('/api/crypto/mac',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({dataHex, keyId:$('macKey').value})}).then(r=>r.json());
+  if(!d.ok){ $('macResult').innerHTML=`<div class="empty" style="color:var(--red);padding:14px">⚠️ ${esc(d.error)}</div>`; return; }
+  lastMac = d.mac;
+  $('macRecv').value = d.mac;
+  $('macResult').innerHTML = `
+    <div class="kv"><span class="k">MAC (DE64/DE128)</span><span style="color:var(--cyan);font-weight:700">${esc(d.mac)}</span></div>
+    <div class="kv"><span class="k">Algoritmo</span><span>Retail MAC · ISO 9797-1 Alg 3</span></div>
+    <div class="kv"><span class="k">KCV de la llave</span><span style="color:var(--amber)">${esc(d.keyKcv)}</span></div>`;
+}
+
+function macEnviarDe64(){
+  if(!lastMac){ toast('Primero calculá el MAC.', 'err'); return; }
+  let f = txFields.find(x=>x.de==='64');
+  if(f){ f.value=lastMac; } else { txFields.push({de:'64', value:lastMac}); }
+  renderFields();
+  showTab('simulador');
+}
+
+async function verificarMac(){
+  const dataHex = $('macData').value.trim();
+  const mac = $('macRecv').value.trim();
+  if(!dataHex || !mac){ toast('Necesito los datos y el MAC recibido.', 'err'); return; }
+  const d = await fetch('/api/crypto/mac/verify',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({dataHex, mac, keyId:$('macKey').value})}).then(r=>r.json());
+  if(!d.ok && d.error){ $('macVerifyResult').innerHTML=`<div class="empty" style="color:var(--red);padding:14px">⚠️ ${esc(d.error)}</div>`; return; }
+  const okC = d.ok?'ok':'no';
+  $('macVerifyResult').innerHTML = `
+    <div style="margin-top:10px"><span class="badge ${okC}">${d.ok?'✔ MAC VÁLIDO':'✗ MAC INVÁLIDO'}</span></div>
+    <div class="kv"><span class="k">MAC esperado</span><span style="color:var(--cyan)">${esc(d.expected)}</span></div>
+    <div class="kv"><span class="k">MAC recibido</span><span style="color:${d.ok?'var(--green)':'var(--red)'}">${esc(d.received)}</span></div>
+    <div class="kv"><span class="k">KCV de la llave</span><span style="color:var(--amber)">${esc(d.keyKcv)}</span></div>`;
+}
+
+async function guardarKey(){
+  const body = { name:$('kName').value.trim()||'Llave', type:$('kType').value, keyHex:$('kHex').value.trim() };
+  if(!body.keyHex){ toast('Ingresá el valor de la llave en hex.', 'err'); return; }
+  const d = await fetch('/api/keys',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json());
+  if(!d.ok){ toast('Error: '+(d.error||'no se pudo cargar'), 'err'); return; }
+  $('kName').value=''; $('kHex').value=''; $('kKcvHint').textContent='KCV se calcula al cargar';
+  await loadCripto();
+}
+
+async function generarKey(){
+  const d = await fetch('/api/keys/generate?bytes=16').then(r=>r.json());
+  $('kHex').value = d.keyHex;
+  $('kKcvHint').innerHTML = `KCV de la llave generada: <b style="color:var(--amber)">${d.kcv}</b>`;
+}
+
+async function calcularKcv(){
+  const keyHex = $('kHex').value.trim();
+  if(!keyHex){ toast('Ingresá una llave primero.', 'err'); return; }
+  const d = await fetch('/api/crypto/kcv',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({keyHex})}).then(r=>r.json());
+  if(!d.ok){ $('kKcvHint').innerHTML=`<span style="color:var(--red)">${esc(d.error)}</span>`; return; }
+  $('kKcvHint').innerHTML = `KCV: <b style="color:var(--amber)">${d.kcv}</b>`;
+}
+
+async function borrarKey(id){
+  if(!confirm('¿Borrar esta llave?')) return;
+  await fetch('/api/keys/'+encodeURIComponent(id),{method:'DELETE'});
+  await loadCripto();
+}
+
+async function resetKeys(){
+  if(!confirm('¿Restaurar las llaves de ejemplo? Se perderán las cargadas.')) return;
+  await fetch('/api/keys/reset',{method:'POST'});
+  await loadCripto();
+}
+
+function usarKeyEnPin(id){ $('pbKey').value=id; showTab('cripto'); $('pbKey').scrollIntoView({behavior:'smooth',block:'center'}); }
+function pbUsarPanSimulador(){ const f=txFields.find(x=>x.de==='2'); if(f) $('pbPan').value=f.value; else toast('No hay DE2 cargado en el simulador.', 'err'); }
+
+let lastPinBlock = '';
+async function cifrarPin(){
+  const body = { pin:$('pbPin').value.trim(), pan:$('pbPan').value.trim(), keyId:$('pbKey').value, format:$('pbFormat').value };
+  const d = await fetch('/api/crypto/pinblock',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json());
+  if(!d.ok){ $('pbResult').innerHTML=`<div class="empty" style="color:var(--red);padding:14px">⚠️ ${esc(d.error)}</div>`; return; }
+  lastPinBlock = d.encryptedPinBlock;
+  $('pbEnc').value = d.encryptedPinBlock;
+  $('pbResult').innerHTML = `
+    <div class="kv"><span class="k">PIN block claro</span><span style="color:var(--muted)">${esc(d.clearPinBlock)}</span></div>
+    <div class="kv"><span class="k">PIN block cifrado (DE52)</span><span style="color:var(--cyan);font-weight:700">${esc(d.encryptedPinBlock)}</span></div>
+    <div class="kv"><span class="k">Formato</span><span>ISO 9564-1 · F${esc(d.format)}</span></div>
+    <div class="kv"><span class="k">KCV de la llave</span><span style="color:var(--amber)">${esc(d.keyKcv)}</span></div>`;
+}
+
+function pbEnviarDe52(){
+  if(!lastPinBlock){ toast('Primero cifrá un PIN.', 'err'); return; }
+  let f = txFields.find(x=>x.de==='52');
+  if(f){ f.value=lastPinBlock; } else { txFields.push({de:'52', value:lastPinBlock}); }
+  renderFields();
+  showTab('simulador');
+}
+
+async function verificarPin(){
+  const enc = $('pbEnc').value.trim();
+  if(!enc){ toast('Pegá el PIN block cifrado.', 'err'); return; }
+  const expected = $('pbExpected').value.trim();
+  const base = { encryptedPinBlock:enc, pan:$('pbPan').value.trim(), keyId:$('pbKey').value, format:$('pbFormat').value };
+  let d;
+  if(expected){
+    d = await fetch('/api/crypto/pinblock/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...base, expectedPin:expected})}).then(r=>r.json());
+  } else {
+    d = await fetch('/api/crypto/pinblock/decrypt',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(base)}).then(r=>r.json());
+  }
+  if(!d.ok && d.error){ $('pbVerifyResult').innerHTML=`<div class="empty" style="color:var(--red);padding:14px">⚠️ ${esc(d.error)}</div>`; return; }
+  if(expected){
+    const okC = d.ok?'ok':'no';
+    $('pbVerifyResult').innerHTML = `
+      <div style="margin-top:10px"><span class="badge ${okC}">${d.ok?'✔ PIN CORRECTO':'✗ PIN NO COINCIDE'}</span></div>
+      <div class="kv"><span class="k">PIN recuperado</span><span style="color:var(--cyan)">${esc(d.recoveredPin||'—')}</span></div>
+      <div class="kv"><span class="k">PIN block claro</span><span style="color:var(--muted)">${esc(d.clearPinBlock||'—')}</span></div>
+      <div class="kv"><span class="k">KCV de la llave</span><span style="color:var(--amber)">${esc(d.keyKcv)}</span></div>`;
+  } else {
+    $('pbVerifyResult').innerHTML = `
+      <div style="margin-top:10px"><span class="badge ok">PIN recuperado: ${esc(d.pin)}</span></div>
+      <div class="kv"><span class="k">PIN block claro</span><span style="color:var(--muted)">${esc(d.clearPinBlock)}</span></div>
+      <div class="kv"><span class="k">KCV de la llave</span><span style="color:var(--amber)">${esc(d.keyKcv)}</span></div>`;
+  }
+}
+
+// ===================== BINES =====================
+let BINES = [];
+const BRAND_COLORS = { visa:'indigo', mastercard:'amber', amex:'cyan', discover:'green', maestro:'amber', otra:'' };
+
+async function loadBines(){
+  const d = await fetch('/api/bines').then(r=>r.json()).catch(()=>({bines:[]}));
+  BINES = d.bines||[];
+  renderBines();
+}
+
+function renderBines(){
+  $('binCount').textContent = BINES.length+' bines';
+  const q = ($('binFilter')?.value||'').toLowerCase();
+  const bf = $('binBrandFilter')?.value||'';
+  const list = BINES.filter(b=>{
+    if(bf && b.brand!==bf) return false;
+    if(q && !(`${b.bin} ${b.bank} ${b.brand} ${b.desc}`.toLowerCase().includes(q))) return false;
+    return true;
+  });
+  if(!list.length){ $('binTbody').innerHTML='<tr><td colspan="7" class="muted" style="padding:18px;text-align:center">Sin BINes que coincidan.</td></tr>'; return; }
+  $('binTbody').innerHTML = list.map(b=>{
+    const col = BRAND_COLORS[b.brand]||'';
+    const tag = col?`<span class="tag" style="background:rgba(129,140,248,.15)">${esc(b.brand)}</span>`:esc(b.brand);
+    return `<tr>
+      <td style="font-weight:700;color:var(--cyan)">${esc(b.bin)}</td>
+      <td>${tag}</td>
+      <td class="muted">${esc(b.bank||'—')}</td>
+      <td class="muted">${esc(b.type)}</td>
+      <td class="muted">${b.length}</td>
+      <td class="muted" style="font-size:11px">${esc(b.desc||'')}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-go" style="width:auto;padding:5px 12px;font-size:11px" onclick="usarBin('${esc(b.bin)}')">▶ Usar</button>
+        <button class="iconbtn" title="Borrar" onclick="borrarBin('${esc(b.bin)}')">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// Genera un PAN válido del BIN y lo carga en el Simulador (DE2) + ajusta perfil
+async function usarBin(bin){
+  const b = BINES.find(x=>x.bin===bin);
+  if(!b) return;
+  const d = await fetch(`/api/bines/${encodeURIComponent(bin)}/pan?length=${b.length}`).then(r=>r.json());
+  const pan = d.pan;
+  // Ajustar perfil si el BIN trae uno distinto
+  if(b.profile && b.profile!==PROFILE){
+    PROFILE = b.profile;
+    $('profile').value = PROFILE;
+    await cargarTemplate();
+    if(PROFILE_MTIS.financial) $('mti').value = PROFILE_MTIS.financial;
+  }
+  // Poner el PAN en DE2 (si no existe el campo, agregarlo)
+  let f = txFields.find(x=>x.de==='2');
+  if(f){ f.value = pan; } else { txFields.unshift({de:'2', value:pan}); }
+  renderFields();
+  showTab('simulador');
+  // feedback visual
+  const inp = [...document.querySelectorAll('#fieldsList input')][txFields.findIndex(x=>x.de==='2')];
+  if(inp){ inp.style.transition='background .1s'; inp.style.background='rgba(34,211,238,.25)'; setTimeout(()=>inp.style.background='',500); }
+}
+
+async function guardarBin(){
+  const body = {
+    bin: $('newBin').value.trim(),
+    brand: $('newBrand').value,
+    profile: $('newBinProfile').value,
+    length: parseInt($('newLen').value,10)||16,
+    type: $('newType').value,
+    bank: $('newBank').value.trim(),
+    desc: $('newBank').value.trim(),
+  };
+  const d = await fetch('/api/bines',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json());
+  if(!d.ok){ toast('Error: '+(d.error||'no se pudo guardar'), 'err'); return; }
+  $('newBin').value=''; $('newBank').value='';
+  await loadBines();
+}
+
+async function borrarBin(bin){
+  if(!confirm(`¿Borrar el BIN ${bin}?`)) return;
+  await fetch('/api/bines/'+encodeURIComponent(bin),{method:'DELETE'});
+  await loadBines();
+}
+
+async function resetBines(){
+  if(!confirm('¿Restaurar el catálogo de BINes de ejemplo? Se perderán los agregados.')) return;
+  await fetch('/api/bines/reset',{method:'POST'});
+  await loadBines();
+}
+
+const RC_NAMES = {
+  '00':'Aprobada','01':'Derivar al emisor','03':'Comercio inválido','05':'Denegada','12':'TX inválida',
+  '13':'Monto inválido','14':'Tarjeta inválida','30':'Error de formato','41':'Tarjeta perdida','43':'Tarjeta robada',
+  '51':'Fondos insuficientes','54':'Tarjeta vencida','55':'PIN incorrecto','57':'TX no permitida','58':'Terminal no permitida',
+  '61':'Excede límite','62':'Tarjeta restringida','65':'Excede frecuencia','75':'PIN bloqueado','76':'Clave inválida',
+  '91':'Emisor inaccesible','92':'Ruteo imposible','96':'Error del sistema'
+};
+function rcName(rc){ return RC_NAMES[rc] || ('Código '+rc); }
+function rcColor(rc){ if(rc==='00') return 'green'; if(rc==='91'||rc==='92'||rc==='96') return 'amber'; return 'red'; }
+
+// ===================== DASHBOARD =====================
+async function loadDashboard(){
+  const d = await fetch('/api/history?limit=500').then(r=>r.json()).catch(()=>({items:[]}));
+  renderDashboard(d.items||[]);
+}
+
+function renderDashboard(items){
+  const body = $('dashBody');
+  $('dashScope').textContent = `${items.length} tx en historial`;
+  if(!items.length){ body.innerHTML = '<div class="empty">Sin datos todavía. Enviá transacciones para ver las métricas.</div>'; return; }
+
+  const total = items.length;
+  let approved=0, denied=0;
+  const codes={}, profiles={}, encodings={}, lat=[];
+  let firstTs=Infinity, lastTs=-Infinity;
+  for(const t of items){
+    const rc = t.responseCode||'??';
+    if(rc==='00') approved++; else denied++;
+    codes[rc]=(codes[rc]||0)+1;
+    const pf=t.profile||'generic'; profiles[pf]=(profiles[pf]||0)+1;
+    const en=t.encoding||'ascii'; encodings[en]=(encodings[en]||0)+1;
+    if(typeof t.elapsedMs==='number') lat.push(t.elapsedMs);
+    if(t.ts){ firstTs=Math.min(firstTs,t.ts); lastTs=Math.max(lastTs,t.ts); }
+  }
+  const pct = n => Math.round(n/total*100);
+  const avg = lat.length ? Math.round(lat.reduce((a,b)=>a+b,0)/lat.length) : 0;
+  const min = lat.length ? Math.min(...lat) : 0;
+  const max = lat.length ? Math.max(...lat) : 0;
+  const spanSec = (isFinite(firstTs)&&lastTs>firstTs) ? (lastTs-firstTs)/1000 : 0;
+  const tps = spanSec>0 ? (total/spanSec).toFixed(2) : '—';
+
+  const barBlock = (obj, colorFn) => {
+    const entries = Object.entries(obj).sort((a,b)=>b[1]-a[1]);
+    const mx = entries[0] ? entries[0][1] : 1;
+    return entries.map(([k,v])=>{
+      const col = typeof colorFn==='function'?colorFn(k):colorFn;
+      return `<div class="bar-row">
+        <span class="bar-lbl">${esc(k)}</span>
+        <span class="bar-name">${esc(colorFn===rcColor?rcName(k):'')}</span>
+        <div class="bar-track"><div class="bar-fill ${col}" style="width:${Math.round(v/mx*100)}%"></div></div>
+        <span class="bar-cnt">${v} · ${pct(v)}%</span>
+      </div>`;
+    }).join('');
+  };
+
+  body.innerHTML = `
+    <div class="kpis">
+      <div class="kpi"><div class="kpi-val cyan">${total}</div><div class="kpi-lbl">Total transacciones</div><div class="kpi-sub">${tps} TPS prom.</div></div>
+      <div class="kpi"><div class="kpi-val green">${approved}</div><div class="kpi-lbl">Aprobadas</div><div class="kpi-sub">${pct(approved)}% del total</div></div>
+      <div class="kpi"><div class="kpi-val red">${denied}</div><div class="kpi-lbl">Denegadas</div><div class="kpi-sub">${pct(denied)}% del total</div></div>
+      <div class="kpi"><div class="kpi-val amber">${avg} ms</div><div class="kpi-lbl">Latencia promedio</div><div class="kpi-sub">${min}–${max} ms</div></div>
+    </div>
+    <div class="dash-grid">
+      <div class="card" style="border-radius:12px">
+        <div class="card-h" style="font-size:13px">Códigos de respuesta (DE 39)</div>
+        <div class="card-b">${barBlock(codes, rcColor)}</div>
+      </div>
+      <div class="card" style="border-radius:12px">
+        <div class="card-h" style="font-size:13px">Latencia TCP simulada</div>
+        <div class="card-b">
+          <div class="lat-grid">
+            <div class="lat-box"><div class="lat-val">${min}</div><div class="lat-lbl">Mínima ms</div></div>
+            <div class="lat-box"><div class="lat-val">${avg}</div><div class="lat-lbl">Promedio ms</div></div>
+            <div class="lat-box"><div class="lat-val">${max}</div><div class="lat-lbl">Máxima ms</div></div>
+          </div>
+          <h4>Por perfil</h4>${barBlock(profiles,'indigo')}
+          <h4>Por encoding</h4>${barBlock(encodings,'cyan')}
+        </div>
+      </div>
+    </div>`;
+}
+
+// ===================== BATCH =====================
+let batchState = { running:false, cancel:false, results:[] };
+
+async function loadBatchScenarios(){
+  if(!SCENARIOS.length) await loadScenarios();
+  const pick = $('batchPick');
+  if(!SCENARIOS.length){ pick.innerHTML='<div class="empty">No hay escenarios. Creá algunos en la pestaña Escenarios.</div>'; return; }
+  pick.innerHTML = SCENARIOS.map((s,i)=>`
+    <label class="batch-opt">
+      <input type="checkbox" class="batch-cb" value="${esc(s.id)}" checked>
+      <span class="b-name">${esc(s.name)}</span>
+      <span class="b-meta">${esc(s.profile)} · ${esc(s.mti)} · ${esc(s.encoding)}</span>
+    </label>`).join('');
+}
+
+function batchSelectAll(val){ document.querySelectorAll('.batch-cb').forEach(cb=>cb.checked=val); }
+
+function stopBatch(){ batchState.cancel = true; }
+
+async function runBatch(){
+  if(batchState.running) return;
+  const ids = Array.from(document.querySelectorAll('.batch-cb:checked')).map(cb=>cb.value);
+  if(!ids.length){ toast('Seleccioná al menos un escenario.', 'err'); return; }
+  const repeat = Math.max(1, Math.min(50, parseInt($('batchRepeat').value,10)||1));
+
+  // Construir cola (escenario × repeticiones)
+  const queue = [];
+  for(let r=0;r<repeat;r++){
+    for(const id of ids){
+      const s = SCENARIOS.find(x=>x.id===id);
+      if(s) queue.push({ scenario:s, rep:r+1 });
+    }
+  }
+
+  batchState = { running:true, cancel:false, results: queue.map((q,i)=>({
+    i, name:q.scenario.name, rep:q.rep, profile:q.scenario.profile, mti:q.scenario.mti,
+    encoding:q.scenario.encoding, status:'wait', rc:'', rcMsg:'', elapsedMs:null, expected:q.scenario.expectedCode||null, error:''
+  })) };
+
+  $('batchRunBtn').style.display='none';
+  $('batchStopBtn').style.display='';
+  $('batchExportBar').style.display='none';
+  renderBatchTable();
+  renderBatchSummary();
+
+  for(let i=0;i<queue.length;i++){
+    if(batchState.cancel){ batchState.results[i].status='wait'; break; }
+    const q = queue[i];
+    batchState.results[i].status='run';
+    renderBatchTable();
+    const t0 = performance.now();
+    try{
+      const body = { mti:q.scenario.mti, encoding:q.scenario.encoding, profile:q.scenario.profile, fields:q.scenario.fields };
+      const d = await fetch('/api/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json());
+      const el = Math.round(performance.now()-t0);
+      const res = batchState.results[i];
+      if(!d.ok){ res.status='no'; res.error=d.error||'error'; res.elapsedMs=el; }
+      else {
+        res.rc = d.response.parsed.responseCode;
+        res.rcMsg = d.response.parsed.responseMsg||rcName(res.rc);
+        res.elapsedMs = d.sim?d.sim.latencyMs:el;
+        // pass = aprobada o coincide con expected si está definido
+        res.status = res.expected ? (res.rc===res.expected?'ok':'no') : (res.rc==='00'?'ok':'no');
+      }
+    }catch(e){
+      batchState.results[i].status='no';
+      batchState.results[i].error=e.message;
+    }
+    renderBatchTable();
+    renderBatchSummary();
+  }
+
+  batchState.running=false;
+  $('batchRunBtn').style.display='';
+  $('batchStopBtn').style.display='none';
+  $('batchExportBar').style.display='';
+  renderBatchSummary(true);
+  loadHistorial();
+}
+
+function renderBatchTable(){
+  const r = batchState.results;
+  if(!r.length){ $('batchResults').innerHTML=''; return; }
+  const rows = r.map(x=>{
+    const st = x.status==='ok'?'<span class="b-stat ok">PASS</span>'
+      : x.status==='no'?'<span class="b-stat no">FAIL</span>'
+      : x.status==='run'?'<span class="b-stat run">···</span>'
+      : '<span class="b-stat wait">espera</span>';
+    const rc = x.rc?`<span class="badge ${rcColor(x.rc)==='green'?'ok':'no'}">${esc(x.rc)}</span> ${esc(x.rcMsg||'')}`:(x.error?`<span style="color:var(--red)">${esc(x.error)}</span>`:'—');
+    const exp = x.expected?esc(x.expected):'<span class="muted">00*</span>';
+    return `<tr class="${x.status==='run'?'run':''}">
+      <td class="batch-row-st">${st}</td>
+      <td>${esc(x.name)}${x.rep>1?` <span class="muted">#${x.rep}</span>`:''}</td>
+      <td class="muted">${esc(x.profile)} · ${esc(x.mti)}</td>
+      <td>${rc}</td>
+      <td class="muted">${exp}</td>
+      <td class="muted">${x.elapsedMs!=null?x.elapsedMs+' ms':'—'}</td>
+    </tr>`;
+  }).join('');
+  $('batchResults').innerHTML = `<table class="batch-table">
+    <thead><tr><th></th><th>Escenario</th><th>Perfil/MTI</th><th>Respuesta (DE39)</th><th>Esperado</th><th>Latencia</th></tr></thead>
+    <tbody>${rows}</tbody></table>`;
+}
+
+function renderBatchSummary(done){
+  const r = batchState.results;
+  const total=r.length, pass=r.filter(x=>x.status==='ok').length, fail=r.filter(x=>x.status==='no').length;
+  const ran = pass+fail;
+  const lat = r.filter(x=>x.elapsedMs!=null).map(x=>x.elapsedMs);
+  const avg = lat.length?Math.round(lat.reduce((a,b)=>a+b,0)/lat.length):0;
+  $('batchSummary').innerHTML = `<div class="batch-sum">
+    <span>Total: <b style="color:var(--cyan)">${total}</b></span>
+    <span>PASS: <b style="color:var(--green)">${pass}</b></span>
+    <span>FAIL: <b style="color:var(--red)">${fail}</b></span>
+    <span>Progreso: <b>${ran}/${total}</b></span>
+    <span>Latencia prom: <b style="color:var(--amber)">${avg} ms</b></span>
+    ${done?`<span style="color:var(--green)">✓ Batch completado</span>`:''}
+  </div>`;
+}
+
+function exportBatch(fmt){
+  const r = batchState.results;
+  if(!r.length) return;
+  let blob, fname;
+  if(fmt==='json'){
+    blob = new Blob([JSON.stringify(r,null,2)],{type:'application/json'});
+    fname='iso8583-batch.json';
+  } else {
+    const cols=['i','name','rep','profile','mti','encoding','status','rc','rcMsg','expected','elapsedMs','error'];
+    const lines=[cols.join(',')].concat(r.map(x=>cols.map(c=>`"${String(x[c]??'').replace(/"/g,'""')}"`).join(',')));
+    blob = new Blob([lines.join('\r\n')],{type:'text/csv'});
+    fname='iso8583-batch.csv';
+  }
+  const url=URL.createObjectURL(blob); const a=document.createElement('a');
+  a.href=url; a.download=fname; a.click(); URL.revokeObjectURL(url);
+}
+
+let OPS = [];
+let FIELD_DEF = {};
+let FIELDS = ['mti'];
+
+// Campos iniciales que se muestran al cargar (DE → valor)
+const SEED_FIELDS = [
+  {de:'2', value:'4111111111111111'},
+  {de:'3', value:'000000'},
+  {de:'4', value:'000000015000'},
+  {de:'11', value:'000123'},
+  {de:'41', value:'TERM0001'},
+  {de:'42', value:'MERCH00000001'},
+];
+let txFields = JSON.parse(JSON.stringify(SEED_FIELDS));
+
+let PROFILE = 'generic';
+let PROFILE_MTIS = {};
+
+async function init(){
+  const cfg = await fetch('/api/config').then(r=>r.json());
+  $('tcpInfo').textContent = `TCP ${cfg.tcp.host}:${cfg.tcp.port} · ${cfg.encoding}`;
+  PROFILE = cfg.profile || 'generic';
+  const {profiles} = await fetch('/api/profiles').then(r=>r.json());
+  $('profile').innerHTML = profiles.map(p=>`<option value="${p.id}" ${p.id===PROFILE?'selected':''}>${esc(p.name)}</option>`).join('');
+  await cargarTemplate();
+  await loadRules();
+  await loadScenarios();
+  await loadHistorial();
+  startStream();
+}
+
+// ---------- Escenarios ----------
+let SCENARIOS = [];
+async function loadScenarios(){
+  const d = await fetch('/api/scenarios').then(r=>r.json());
+  SCENARIOS = d.scenarios;
+  $('scenarioSel').innerHTML = SCENARIOS.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')
+    || '<option value="">(sin escenarios)</option>';
+}
+
+async function cargarEscenario(){
+  const id = $('scenarioSel').value;
+  const s = SCENARIOS.find(x=>x.id===id);
+  if(!s){ return; }
+  PROFILE = s.profile || 'generic';
+  $('profile').value = PROFILE;
+  await cargarTemplate();
+  $('mti').value = s.mti || '0200';
+  $('encoding').value = s.encoding || 'ascii';
+  txFields = Object.keys(s.fields).sort((a,b)=>a-b).map(de=>({de:String(de), value:String(s.fields[de])}));
+  renderFields();
+}
+
+async function guardarEscenario(){
+  const name = prompt('Nombre del escenario:');
+  if(!name) return;
+  const body = { name, profile:PROFILE, mti:$('mti').value, encoding:$('encoding').value, fields:collectFields() };
+  const d = await fetch('/api/scenarios',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json());
+  if(!d.ok){ toast('Error: '+(d.error||'no se pudo guardar'), 'err'); return; }
+  await loadScenarios();
+  $('scenarioSel').value = d.scenario.id;
+}
+
+async function borrarEscenario(){
+  const id = $('scenarioSel').value;
+  const s = SCENARIOS.find(x=>x.id===id);
+  if(!s) return;
+  if(!confirm(`¿Borrar el escenario "${s.name}"?`)) return;
+  await fetch('/api/scenarios/'+encodeURIComponent(id),{method:'DELETE'});
+  await loadScenarios();
+}
+
+async function resetEscenarios(){
+  if(!confirm('¿Restaurar los escenarios de ejemplo? Se perderán los guardados.')) return;
+  await fetch('/api/scenarios/reset',{method:'POST'});
+  await loadScenarios();
+}
+
+// ---------- Comparador de tramas ----------
+function usarUltimo(slot, which){
+  const hex = lastTx[which] || '';
+  if(!hex){ toast('Todavía no enviaste una transacción.', 'err'); return; }
+  $(slot==='A'?'cmpA':'cmpB').value = hex;
+}
+
+function comparar(){
+  const clean = s => (s||'').replace(/[^0-9a-fA-F]/g,'').toUpperCase();
+  const a = clean($('cmpA').value), b = clean($('cmpB').value);
+  if(!a || !b){ $('cmpResult').innerHTML = '<div class="empty" style="color:var(--red)">Pegá ambas tramas en hex.</div>'; return; }
+  const ba = a.match(/.{1,2}/g)||[], bb = b.match(/.{1,2}/g)||[];
+  const n = Math.max(ba.length, bb.length);
+  let diffs = 0;
+  const renderSide = (mine, other)=> {
+    let html='';
+    for(let i=0;i<n;i++){
+      const m = mine[i], o = other[i];
+      if(m===undefined){ continue; }
+      let cls = 'same';
+      if(o===undefined) cls='extra';
+      else if(m!==o){ cls='diff'; }
+      html += `<span class="bb ${cls}">${m}</span> `;
+    }
+    return html;
+  };
+  for(let i=0;i<n;i++){ if(ba[i]!==bb[i]) diffs++; }
+  $('cmpResult').innerHTML = `
+    <div class="cmp-sum">
+      <span>A: <b style="color:var(--cyan)">${ba.length}</b> bytes</span>
+      <span>B: <b style="color:var(--cyan)">${bb.length}</b> bytes</span>
+      <span>Diferencias: <b style="color:${diffs?'var(--red)':'var(--green)'}">${diffs}</b></span>
+    </div>
+    <label>Trama A</label><div class="cmp-hex">${renderSide(ba,bb)}</div>
+    <label style="margin-top:8px">Trama B</label><div class="cmp-hex">${renderSide(bb,ba)}</div>`;
+}
+
+async function cargarTemplate(){
+  const tpl = await fetch('/api/template?profile='+encodeURIComponent(PROFILE)).then(r=>r.json());
+  FIELD_DEF = tpl.fieldDef || {};
+  PROFILE_MTIS = tpl.mtis || {};
+  FIELDS = ['mti', ...Object.keys(FIELD_DEF).sort((a,b)=>a-b)];
+  renderFields();
+}
+
+async function cambiarPerfil(){
+  PROFILE = $('profile').value;
+  if(PROFILE_MTIS) {} // se recarga abajo
+  await cargarTemplate();
+  // ajustar MTI por defecto del perfil (financial)
+  if(PROFILE_MTIS.financial) $('mti').value = PROFILE_MTIS.financial;
+}
+
+function deLabel(de){ const d=FIELD_DEF[de]; return d?`DE${de} · ${d.name}`:`DE${de}`; }
+function deHint(de){ const d=FIELD_DEF[de]; if(!d) return ''; return d.type==='n'||d.type==='an'?`${d.type} ${d.length}`:`${d.type} ≤${d.maxLen}`; }
+
+function renderFields(){
+  const deOpts = (sel)=>Object.keys(FIELD_DEF).sort((a,b)=>a-b)
+    .map(de=>`<option value="${de}" ${de===sel?'selected':''}>${esc(deLabel(de))}</option>`).join('');
+  $('fieldsList').innerHTML = txFields.map((f,i)=>`
+    <div class="frow">
+      <div>
+        <select onchange="setFieldDe(${i},this.value)">${deOpts(f.de)}</select>
+        <div class="fhint">${esc(deHint(f.de))}</div>
+      </div>
+      <input value="${esc(f.value)}" placeholder="valor" oninput="setFieldVal(${i},this.value)">
+      <button class="iconbtn" title="Quitar" onclick="quitarCampo(${i})">✕</button>
+    </div>`).join('') || '<div class="fhint" style="margin-bottom:8px">Sin campos. Agregá uno con "+ Campo".</div>';
+}
+
+function setFieldDe(i,de){ if(txFields[i]){ txFields[i].de=de; renderFields(); } }
+function setFieldVal(i,val){ if(txFields[i]) txFields[i].value=val; }
+function quitarCampo(i){ txFields.splice(i,1); renderFields(); }
+function agregarCampo(){
+  const used = new Set(txFields.map(f=>f.de));
+  const next = Object.keys(FIELD_DEF).sort((a,b)=>a-b).find(de=>!used.has(de)) || Object.keys(FIELD_DEF)[0];
+  txFields.push({de:next,value:''});
+  renderFields();
+}
+
+let RULES = [];
+async function loadRules(){
+  const d = await fetch('/api/rules').then(r=>r.json());
+  RULES = d.rules; OPS = d.ops;
+  renderRules();
+}
+
+function opLabel(op){ const o = OPS.find(x=>x.op===op); return o?o.label:op; }
+function condText(c){ return `DE${c.field==='mti'?' MTI':c.field} ${opLabel(c.op)} "${c.value}"`; }
+
+function renderRules(){
+  $('rulesList').innerHTML = RULES.map(r=>{
+    const cls = r.responseCode==='00'?'ok':'no';
+    const conds = r.conditions.length
+      ? r.conditions.map(condText).join(` <b style="color:var(--amber)">${r.match==='any'?'O':'Y'}</b> `)
+      : '<i>cualquier caso (catch-all)</i>';
+    return `<div class="rule">
+      <span class="rc ${cls}">${r.responseCode}</span>
+      <div class="rule-main">
+        <div class="rule-desc">${esc(r.desc)}</div>
+        <div class="rule-cond">${conds}</div>
+      </div>
+      <div class="rule-acts">
+        <button class="iconbtn" title="Editar" onclick="editarRegla('${r.id}')">✎</button>
+        <button class="iconbtn" title="Borrar" onclick="borrarRegla('${r.id}')">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+let editing = null; // id en edición o null para nueva
+function nuevaRegla(){ editing = '__new__'; openEditor({ desc:'', responseCode:'00', match:'all', conditions:[{field:'4',op:'gt',value:''}] }); }
+function editarRegla(id){ const r = RULES.find(x=>x.id===id); if(!r) return; editing = id; openEditor(JSON.parse(JSON.stringify(r))); }
+
+let draft = null;
+function openEditor(rule){
+  draft = rule;
+  if(!draft.conditions.length) draft.conditions = [];
+  renderEditor();
+  $('ruleEditor').style.display='block';
+  $('ruleEditor').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function closeEditor(){ $('ruleEditor').style.display='none'; draft=null; editing=null; }
+
+function renderEditor(){
+  const fieldOpts = (sel)=>FIELDS.map(f=>`<option value="${f}" ${f===sel?'selected':''}>${f==='mti'?'MTI':'DE'+f}</option>`).join('');
+  const opOpts = (sel)=>OPS.map(o=>`<option value="${o.op}" ${o.op===sel?'selected':''}>${o.label}</option>`).join('');
+  const condRows = draft.conditions.map((c,i)=>`
+    <div class="cond-row">
+      <select onchange="setCond(${i},'field',this.value)">${fieldOpts(c.field)}</select>
+      <select onchange="setCond(${i},'op',this.value)">${opOpts(c.op)}</select>
+      <input value="${esc(c.value)}" placeholder="valor" oninput="setCond(${i},'value',this.value)">
+      <button class="iconbtn" title="Quitar" onclick="quitarCond(${i})">✕</button>
+    </div>`).join('') || '<div class="rule-cond" style="margin-bottom:8px"><i>Sin condiciones = catch-all (siempre aprueba/matchea)</i></div>';
+
+  $('ruleEditor').innerHTML = `<div class="editor">
+    <div class="row">
+      <div><label>Descripción</label><input id="ed-desc" value="${esc(draft.desc)}" placeholder="Ej: Monto alto → fondos insuf."></div>
+      <div><label>Código resp. (DE39)</label><input id="ed-rc" value="${esc(draft.responseCode)}" maxlength="2" placeholder="00"></div>
+    </div>
+    <label>Combinar condiciones</label>
+    <select id="ed-match" style="margin-bottom:12px">
+      <option value="all" ${draft.match==='all'?'selected':''}>TODAS deben cumplirse (Y)</option>
+      <option value="any" ${draft.match==='any'?'selected':''}>CUALQUIERA basta (O)</option>
+    </select>
+    <label>Condiciones</label>
+    ${condRows}
+    <button class="btn btn-ghost" style="padding:6px 12px;font-size:11px;width:auto;margin-top:2px" onclick="agregarCond()">+ condición</button>
+    <div class="editor-actions">
+      <button class="btn btn-go" style="width:auto" onclick="guardarRegla()">${editing==='__new__'?'Crear regla':'Guardar cambios'}</button>
+      <button class="btn btn-ghost" onclick="closeEditor()">Cancelar</button>
+    </div>
+  </div>`;
+}
+
+function setCond(i,key,val){ if(draft&&draft.conditions[i]) draft.conditions[i][key]=val; }
+function syncMeta(){ draft.desc=$('ed-desc').value; draft.responseCode=$('ed-rc').value.trim(); draft.match=$('ed-match').value; }
+function agregarCond(){ syncMeta(); draft.conditions.push({field:'4',op:'gt',value:''}); renderEditor(); }
+function quitarCond(i){ syncMeta(); draft.conditions.splice(i,1); renderEditor(); }
+
+async function guardarRegla(){
+  syncMeta();
+  if(!draft.desc.trim()){ toast('Poné una descripción', 'err'); return; }
+  if(!/^\d{2}$/.test(draft.responseCode)){ toast('El código de respuesta debe tener 2 dígitos (ej: 00, 51)', 'err'); return; }
+  const body = { desc:draft.desc, responseCode:draft.responseCode, match:draft.match,
+    conditions: draft.conditions.filter(c=>c.value!=='' || c.op==='regex') };
+  const url = editing==='__new__' ? '/api/rules' : '/api/rules/'+encodeURIComponent(editing);
+  const method = editing==='__new__' ? 'POST' : 'PUT';
+  const d = await fetch(url,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json());
+  if(!d.ok){ toast('Error: '+(d.error||'no se pudo guardar'), 'err'); return; }
+  closeEditor(); await loadRules();
+}
+
+async function borrarRegla(id){
+  const r = RULES.find(x=>x.id===id);
+  if(!confirm(`¿Borrar la regla "${r?r.desc:id}"?`)) return;
+  await fetch('/api/rules/'+encodeURIComponent(id),{method:'DELETE'});
+  await loadRules();
+}
+
+async function resetReglas(){
+  if(!confirm('¿Restaurar las reglas por defecto? Se perderán los cambios.')) return;
+  await fetch('/api/rules/reset',{method:'POST'});
+  closeEditor(); await loadRules();
+}
+
+function collectFields(){
+  const out = {};
+  for(const f of txFields){ if(f.de && f.value!=='') out[f.de]=f.value; }
+  return out;
+}
+
+async function enviar(){
+  const body = { mti:$('mti').value, encoding:$('encoding').value, profile:PROFILE, fields:collectFields() };
+  $('result').innerHTML = '<div class="empty">Procesando…</div>';
+  setStatusBar({ profile: body.profile, encoding: body.encoding });
+  try{
+    const d = await fetch('/api/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json());
+    if(!d.ok){ $('result').innerHTML = `<div class="empty" style="color:var(--red)">⚠️ ${d.error||d.stage}</div>`; $('resBadge').innerHTML=''; toast(d.error||'Error al procesar', 'err'); return; }
+    bumpTxCount();
+    toast(`Respuesta ${d.response.parsed.responseCode} · ${d.response.parsed.mti}`, 'ok');
+    renderResult(d);
+  }catch(e){ $('result').innerHTML = `<div class="empty" style="color:var(--red)">❌ ${e.message}</div>`; toast(e.message, 'err'); }
+}
+
+let lastTx = { request:'', response:'' };
+function renderResult(d){
+  lastTx = { request: d.request.hex, response: d.response.hex };
+  const rc = d.response.parsed.responseCode;
+  const msg = d.response.parsed.responseMsg || '';
+  const okClass = rc==='00'?'ok':'no';
+  $('resBadge').innerHTML = `<span class="badge ${okClass}">DE39 ${rc} · ${msg}</span>`;
+  $('result').innerHTML = `
+    <div class="kv"><span class="k">Perfil</span><span>${esc(d.profile||'generic')}</span></div>
+    <div class="kv"><span class="k">Encoding</span><span><span class="tag ${d.encoding}">${d.encoding.toUpperCase()}</span></span></div>
+    <div class="kv"><span class="k">MTI</span><span>${d.request.parsed.mti} → ${d.response.parsed.mti}</span></div>
+    <div class="kv"><span class="k">Regla disparada</span><span>${d.sim.matchedRule.id}</span></div>
+    <div class="kv"><span class="k">Latencia simulada</span><span>${d.sim.latencyMs} ms</span></div>
+    <div class="kv"><span class="k">Auth (DE38)</span><span>${d.response.parsed.authCode||'—'}</span></div>
+    <div class="kv"><span class="k">RRN (DE37)</span><span>${d.response.parsed.retrievalRef||'—'}</span></div>
+    <h4>Request HEX (${d.request.length}b)</h4><div class="hex">${d.request.hex}</div>
+    <h4>Response HEX (${d.response.length}b)</h4><div class="hex">${d.response.hex}</div>`;
+}
+
+// ---------- Inspector de tramas ----------
+function inspUsarUltimo(which){
+  const hex = lastTx[which]||'';
+  if(!hex){ toast('Todavía no enviaste una transacción.', 'err'); return; }
+  $('inspHex').value = hex;
+}
+
+async function inspeccionar(){
+  const hex = $('inspHex').value.trim();
+  if(!hex){ $('inspResult').innerHTML='<div class="empty" style="color:var(--red)">Pegá una trama en hex.</div>'; return; }
+  $('inspResult').innerHTML='<div class="empty">Inspeccionando…</div>';
+  const d = await fetch('/api/inspect',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({hex, encoding:$('inspEncoding').value, profile:$('inspProfile').value})}).then(r=>r.json());
+  if(!d.ok){ $('inspResult').innerHTML=`<div class="empty" style="color:var(--red)">⚠️ ${esc(d.error)}</div>`; return; }
+  const p = d.parsed;
+  const FIELD_DEF_INSP = {};
+  // reusar FIELD_DEF si mismo perfil, si no tomar del template
+  const rows = Object.entries(p.fields||{}).map(([de,val])=>{
+    const def = FIELD_DEF[de];
+    return `<div class="insp-field">
+      <span class="insp-de">DE${de}</span>
+      <span class="insp-name">${esc(def?def.name:'')}</span>
+      <span class="insp-val">${esc(String(val))}</span>
+    </div>`;
+  }).join('');
+  const toggleBtns = histLastSel ? `
+    <div style="margin:8px 0;display:flex;gap:8px">
+      <button class="linkbtn" onclick="inspVerHistorial('request')">📤 Ver request</button>
+      <button class="linkbtn" onclick="inspVerHistorial('response')">📥 Ver response</button>
+    </div>` : '';
+  $('inspResult').innerHTML = `
+    ${toggleBtns}
+    <div class="kv" style="margin-top:10px"><span class="k">Longitud</span><span>${d.length} bytes</span></div>
+    <div class="kv"><span class="k">Encoding detectado</span><span><span class="tag ${d.encoding}">${d.encoding.toUpperCase()}</span></span></div>
+    <div class="kv"><span class="k">MTI</span><span>${esc(p.mti||'—')}</span></div>
+    <div class="kv"><span class="k">Bitmap</span><span style="font-family:var(--mono);font-size:11px">${esc(p.bitmapHex||'')}</span></div>
+    ${p.header?`<div class="kv"><span class="k">Header</span><span style="font-family:var(--mono)">${esc(p.header)}</span></div>`:''}
+    ${p.parseWarning?`<div class="kv"><span class="k" style="color:var(--amber)">⚠ Warning</span><span>${esc(p.parseWarning)}</span></div>`:''}
+    <h4 style="margin-top:12px">Campos (${Object.keys(p.fields||{}).length})</h4>
+    ${rows||'<div class="empty" style="padding:8px">Sin campos parseados.</div>'}`;
+}
+
+// ---------- Historial ----------
+let histItems = [];
+async function loadHistorial(){
+  const d = await fetch('/api/history?limit=200').then(r=>r.json()).catch(()=>({items:[]}));
+  histItems = d.items||[];
+  renderHistorial();
+}
+
+function renderHistorial(){
+  $('histCount').textContent = histItems.length+' tx';
+  if(!histItems.length){ $('histFeed').innerHTML='<div class="empty">Sin transacciones aún.</div>'; return; }
+  $('histFeed').innerHTML = histItems.map(t=>{
+    const okC = t.responseCode==='00'?'ok':'no';
+    const src = t.source==='ui'?'ui':'tcp';
+    const ts = new Date(t.ts).toLocaleTimeString();
+    return `<div class="hist-item" onclick="inspDesdeHistorial('${t.id}')">
+      <span class="hist-src ${src}">${src}</span>
+      <span class="muted">${ts}</span>
+      <span>${esc(t.reqMti||'')}→${esc(t.respMti||'')}</span>
+      <span class="badge ${okC}">${t.responseCode}</span>
+      <span class="tag ${t.encoding||'ascii'}">${(t.encoding||'ascii').toUpperCase()}</span>
+      <span class="muted" style="margin-left:auto">${t.elapsedMs}ms</span>
+    </div>`;
+  }).join('');
+}
+
+function inspDesdeHistorial(id){
+  const t = histItems.find(x=>x.id===id);
+  if(!t||!t.request) return;
+  histLastSel = t;
+  $('inspHex').value = t.request.hex||'';
+  $('inspProfile').value = t.profile||'generic';
+  $('inspEncoding').value = t.encoding||'ascii';
+  inspeccionar();
+  // scroll al inspector
+  $('inspHex').scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+let histLastSel = null;
+function inspVerHistorial(parte){
+  if(!histLastSel) return;
+  const t = histLastSel;
+  $('inspHex').value = (parte==='response' ? t.response?.hex : t.request?.hex) || '';
+  inspeccionar();
+}
+
+async function limpiarHistorial(){
+  if(!confirm('¿Limpiar todo el historial?')) return;
+  await fetch('/api/history',{method:'DELETE'});
+  histItems=[];
+  renderHistorial();
+}
+
+let feedItems = [];
+function startStream(){
+  const es = new EventSource('/api/stream');
+  es.onmessage = (e)=>{
+    let evt; try{ evt = JSON.parse(e.data); }catch{ return; }
+    if(evt.type!=='transaction') return;
+    feedItems.unshift(evt);
+    feedItems = feedItems.slice(0,50);
+    renderFeed();
+    // Refrescar historial en tiempo real (solo últimas 200)
+    loadHistorial();
+  };
+}
+function renderFeed(){
+  if(!feedItems.length) return;
+  $('feed').innerHTML = feedItems.map(t=>{
+    const okC = t.responseCode==='00'?'ok':'no';
+    return `<div class="feed-item">
+      <span class="tag ${t.encoding}">${t.encoding.toUpperCase()}</span>
+      <span class="muted">${t.peer}</span>
+      <span>${t.reqMti}→${t.respMti}</span>
+      <span class="badge ${okC}">${t.responseCode}</span>
+      <span class="muted" style="margin-left:auto">${t.elapsedMs}ms</span>
+    </div>`;
+  }).join('');
+}
+init();
+</script>
+</body>
+</html>

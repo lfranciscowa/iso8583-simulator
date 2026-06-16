@@ -1,0 +1,19 @@
+{
+  "name": "iso8583-simulator",
+  "version": "0.1.0",
+  "description": "Simulador de respuestas ISO 8583 que escucha por TCP desde cualquier plataforma y soporta payloads en ASCII o EBCDIC",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "tcp": "node tcp-server.js",
+    "dev": "node --watch server.js",
+    "test": "node test/run.js"
+  },
+  "keywords": ["iso8583", "simulator", "ebcdic", "ascii", "payments", "switch", "sandbox"],
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "dotenv": "^17.4.2"
+  }
+}

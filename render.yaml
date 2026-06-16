@@ -1,0 +1,25 @@
+# Render Blueprint — Simulador ISO 8583
+# Web Service Node. Expone la UI web y el endpoint /api/pos-tcp por el que el
+# POS (Visual Admin) le manda las tramas vía HTTPS.
+#
+# NOTA: el listener TCP crudo (puerto 8583) NO es accesible públicamente en
+# Render; el POS le habla por /api/pos-tcp. El AS/400 real, cuando se conecte,
+# necesitará red privada/VPN o un host con TCP expuesto.
+services:
+  - type: web
+    name: iso8583-simulator
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      # Validación de PIN (DE52). Por defecto valida contra 1234 con tpk-demo.
+      - key: SIM_PIN_VALIDATE
+        value: "true"
+      - key: SIM_PIN_EXPECTED
+        value: "1234"
+      # Credenciales de la UI (si aplica login). Cámbialas en el dashboard.
+      # - key: SIM_LOGIN_USER
+      #   sync: false
+      # - key: SIM_LOGIN_PASS
+      #   sync: false
