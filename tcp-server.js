@@ -63,6 +63,7 @@ function start(opts = {}) {
         respMti: result.response.parsed.mti,
         responseCode: rc,
         matchedRule: result.sim.matchedRule,
+        lifecycle: result.sim.lifecycle,
         elapsedMs: Date.now() - t0,
         request: result.request,
         response: { hex: result.response.hex, length: result.response.length, parsed: result.response.parsed },

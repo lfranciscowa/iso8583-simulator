@@ -21,6 +21,7 @@ const rulesStore = require('./switch-sim/rules-store');
 const scenarioStore = require('./switch-sim/scenarios-store');
 const binesStore = require('./switch-sim/bines-store');
 const keysStore = require('./switch-sim/keys-store');
+const lifecycleStore = require('./switch-sim/lifecycle-store');
 const crypto8583 = require('./lib/crypto8583');
 const tcpServer  = require('./tcp-server');
 const { processTransaction } = require('./lib/engine');
@@ -285,7 +286,26 @@ app.post('/api/crypto/mac/verify', (req, res) => {
 });
 
 app.get('/api/config', (req, res) => {
-  res.json({ tcp: config.tcp, encoding: config.encoding, framing: config.framing, profile: config.profile });
+  res.json({ tcp: config.tcp, encoding: config.encoding, framing: config.framing, profile: config.profile, lifecycle: config.lifecycle });
+});
+
+// --- Enlace de transacciones (TLID / Transaction ID) ---
+app.get('/api/links', (req, res) => {
+  res.json({ mode: config.lifecycle.mode, declineCode: config.lifecycle.declineCode, items: lifecycleStore.list() });
+});
+
+app.post('/api/links/mode', (req, res) => {
+  const { mode } = req.body || {};
+  if (!['off', 'warn', 'strict'].includes(mode)) {
+    return res.status(400).json({ ok: false, error: "mode debe ser 'off', 'warn' o 'strict'" });
+  }
+  config.lifecycle.mode = mode;
+  res.json({ ok: true, mode });
+});
+
+app.delete('/api/links', (req, res) => {
+  lifecycleStore.reset();
+  res.json({ ok: true });
 });
 
 // --- Armar trama sin enviar ---
@@ -314,7 +334,7 @@ app.post('/api/send', async (req, res) => {
       peer: 'UI', encoding: result.encoding, profile: result.profile,
       reqMti: result.request.parsed.mti, respMti: result.response.parsed.mti,
       responseCode: result.response.parsed.responseCode,
-      matchedRule: result.sim.matchedRule, elapsedMs: result.sim.latencyMs,
+      matchedRule: result.sim.matchedRule, lifecycle: result.sim.lifecycle, elapsedMs: result.sim.latencyMs,
       request: result.request, response: { hex: result.response.hex, length: result.response.length, parsed: result.response.parsed },
     }));
     if (history.length > 500) history.pop();
@@ -350,7 +370,7 @@ app.post('/api/pos-tcp', auth.requireBridgeKey, async (req, res) => {
       peer: 'POS (bridge)', encoding: result.encoding, profile: result.profile,
       reqMti: result.request.parsed.mti, respMti: result.response.parsed.mti,
       responseCode: result.response.parsed.responseCode,
-      matchedRule: result.sim.matchedRule, elapsedMs: result.sim.latencyMs,
+      matchedRule: result.sim.matchedRule, lifecycle: result.sim.lifecycle, elapsedMs: result.sim.latencyMs,
       request: result.request,
       response: { hex: result.response.hex, length: result.response.length, parsed: result.response.parsed },
     }));
@@ -360,6 +380,7 @@ app.post('/api/pos-tcp', auth.requireBridgeKey, async (req, res) => {
       ok: true,
       responseHex: result.response.hex,
       responseCode: result.response.parsed.responseCode,
+      lifecycle: result.sim.lifecycle,
       elapsedMs: Date.now() - t0,
     });
   } catch (err) {

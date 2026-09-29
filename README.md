@@ -52,6 +52,8 @@ npm run tcp
 | `SIM_ADMIN_USER` | `admin` | Usuario para iniciar sesión |
 | `SIM_ADMIN_PASS` | *(vacío = login deshabilitado)* | Contraseña; si se define, toda la API y la UI exigen sesión |
 | `SIM_MASTER_KEY` | *(clave de laboratorio)* | KEK para cifrar el llavero (`config/keys.json`) en reposo |
+| `SIM_LINK_MODE` | `warn` | Enlace de transacciones: `off` · `warn` · `strict` (ver abajo) |
+| `SIM_LINK_DECLINE_CODE` | `30` | DE39 con que se rechaza en modo `strict` |
 
 ---
 
@@ -95,6 +97,43 @@ code, montos, monedas DE49/50/51, tracks, RRN, EMV DE55, PIN DE52, etc.).
 | Cualquier otro caso | `00` Aprobada |
 
 Las reglas son editables en `switch-sim/mock-switch.js`.
+
+---
+
+## 🔗 Enlace de transacciones (mandato Mastercard TLID / Visa Transaction ID)
+
+Desde el **23 de octubre de 2026**, Mastercard exige que el comercio reenvíe el
+**Transaction Link Identifier (TLID)** —22 caracteres en **DE105**— en toda
+transacción relacionada: cobros recurrentes, cuotas, credencial guardada,
+reversos y devoluciones. Las tarifas por incumplimiento empiezan en enero de 2027.
+Visa aplica la misma lógica con su **Transaction ID** (15 dígitos, **DE62**).
+
+Con los perfiles `mastercard` y `visa`, el switch simulado:
+
+1. **Emite** el identificador en la respuesta de toda compra o alta de credencial aprobada.
+2. **Valida** las transacciones siguientes y reporta hallazgos:
+
+| Código | Cuándo |
+|---|---|
+| `LINK_INITIAL` *(info)* | Primera transacción con credencial guardada (`DE22` = `10xx`): se emite el identificador |
+| `LINK_MISSING` | Reverso (`04xx`), devolución (`DE3` = `20xxxx`) o cobro recurrente de una tarjeta con historial, **sin** identificador |
+| `LINK_UNKNOWN` | El identificador no fue emitido por este switch |
+| `LINK_PAN_MISMATCH` | El identificador pertenece a otra tarjeta |
+| `LINK_FORMAT` | Formato inválido (22 alfanuméricos Mastercard / 15 dígitos Visa) |
+
+**Modos** (`SIM_LINK_MODE`, o desde la pestaña *Enlace TLID* de la UI):
+
+- `warn` *(default)*: reporta hallazgos sin alterar la respuesta, igual que la red real (que cobra, no rechaza).
+- `strict`: rechaza con `SIM_LINK_DECLINE_CODE` para forzar la corrección antes de certificar.
+- `off`: desactivado.
+
+Los hallazgos se devuelven en `sim.lifecycle` de `/api/send`, en el campo
+`lifecycle` de `/api/pos-tcp` y en el historial. `GET /api/links` lista los
+identificadores emitidos (PAN enmascarado; el PAN se indexa por hash SHA-256, nunca en claro).
+
+> ⚠️ Aproximación basada en información pública del mandato. El formato exacto
+> de sub-elementos de DE105 y DE62 es confidencial de cada marca: aquí el
+> identificador viaja como valor completo del campo.
 
 ---
 

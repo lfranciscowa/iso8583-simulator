@@ -249,6 +249,10 @@ textarea:focus{border-color:var(--cyan)}
     <button class="nav-item" data-tab="bines" onclick="showTab('bines')">💳 BINes</button>
   </div>
   <div class="nav-group">
+    <div class="nav-group-lbl">Mandatos de marca</div>
+    <button class="nav-item" data-tab="enlace" onclick="showTab('enlace')">🔗 Enlace TLID</button>
+  </div>
+  <div class="nav-group">
     <div class="nav-group-lbl">Seguridad</div>
     <button class="nav-item" data-tab="cripto" onclick="showTab('cripto')">🔐 Cripto</button>
   </div>
@@ -307,6 +311,58 @@ textarea:focus{border-color:var(--cyan)}
       <div id="rulesList"></div>
       <div id="ruleEditor" style="display:none"></div>
     </div>
+  </div>
+</div>
+
+<!-- ================= TAB: ENLACE TLID ================= -->
+<div class="tabpanel single" id="tab-enlace" style="max-width:1100px">
+  <div class="card">
+    <div class="card-h">Enlace de transacciones — Mastercard TLID / Visa Transaction ID</div>
+    <div class="card-b">
+      <p class="rule-cond" style="margin:0 0 12px">
+        Desde el <b>23-oct-2026</b> Mastercard exige que el comercio reenvíe el <b>TLID</b> (DE105, 22 caracteres) en toda
+        transacción relacionada: cobros recurrentes, cuotas, credencial guardada, reversos y devoluciones. Visa usa su
+        <b>Transaction ID</b> (DE62, 15 dígitos) con la misma lógica. El switch emite el identificador en la autorización
+        aprobada y valida que las transacciones siguientes lo traigan.
+      </p>
+      <div class="row">
+        <div><label>Modo de validación</label>
+          <select id="linkMode" onchange="cambiarModoEnlace()">
+            <option value="warn">warn — reporta, no altera la respuesta</option>
+            <option value="strict">strict — rechaza si falta o no cuadra</option>
+            <option value="off">off — desactivado</option>
+          </select>
+        </div>
+        <div><label>Código de rechazo en strict</label><input id="linkDecline" disabled></div>
+      </div>
+      <p class="rule-cond" style="margin:8px 0 0">Aplica a los perfiles <b>mastercard</b> y <b>visa</b>. Aproximación basada en información pública: los formatos exactos de sub-elementos de cada marca son confidenciales.</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <div class="card-h">Flujo guiado (Mastercard)
+      <button class="btn btn-ghost" style="padding:6px 12px;font-size:11px" onclick="flujoReiniciar()">↺ Nueva tarjeta</button>
+    </div>
+    <div class="card-b">
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+        <button class="btn btn-go" style="width:auto;font-size:12px" onclick="flujoPaso('inicial')">1 · Alta de credencial (emite TLID)</button>
+        <button class="btn btn-ghost" style="width:auto;font-size:12px" onclick="flujoPaso('recurrente')">2 · Cobro recurrente CON TLID</button>
+        <button class="btn btn-ghost" style="width:auto;font-size:12px" onclick="flujoPaso('sin')">3 · Cobro recurrente SIN TLID</button>
+        <button class="btn btn-ghost" style="width:auto;font-size:12px" onclick="flujoPaso('reverso')">4 · Reverso CON TLID</button>
+      </div>
+      <div class="rule-cond" id="flujoTarjeta"></div>
+      <div id="flujoLog"><div class="empty">Ejecutá los pasos en orden para ver cómo el switch emite y valida el TLID.</div></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <div class="card-h">Identificadores emitidos <span class="muted" id="linkCount" style="font-size:11px;font-weight:400"></span>
+      <span style="display:flex;gap:8px">
+        <button class="btn btn-ghost" style="padding:6px 12px;font-size:11px" onclick="loadEnlace()">⟳</button>
+        <button class="btn btn-ghost" style="padding:6px 12px;font-size:11px" onclick="resetEnlaces()">🗑 Vaciar</button>
+      </span>
+    </div>
+    <div class="card-b" id="linkList"></div>
   </div>
 </div>
 
@@ -651,6 +707,96 @@ function showTab(name){
   if(name==='batch') loadBatchScenarios();
   if(name==='bines') loadBines();
   if(name==='cripto') loadCripto();
+  if(name==='enlace') loadEnlace();
+}
+
+// ===================== ENLACE TLID =====================
+const FINDING_COLOR = { error:'var(--red)', info:'var(--cyan)' };
+
+function renderFindings(lc){
+  if(!lc || !lc.applicable) return '';
+  const idOut = lc.issued ? `emitido <b style="color:var(--amber)">${esc(lc.issued)}</b>` : (lc.known ? `reenviado <b style="color:var(--amber)">${esc(lc.linkIn)}</b> ✓` : '—');
+  const items = lc.findings.length
+    ? lc.findings.map(f=>`<div style="color:${FINDING_COLOR[f.level]||'inherit'}">${f.level==='error'?'✖':'ℹ'} <b>${esc(f.code)}</b> — ${esc(f.msg)}</div>`).join('')
+    : '<div style="color:var(--green)">✔ Sin hallazgos</div>';
+  return `<div class="kv"><span class="k">${esc(lc.label)} (DE${lc.field})</span><span>${idOut}</span></div>
+    <div class="kv"><span class="k">Tipo / modo</span><span>${esc(lc.kind)} · ${esc(lc.mode)}</span></div>
+    <div class="rule-cond" style="margin:6px 0 10px">${items}</div>`;
+}
+
+async function loadEnlace(){
+  const d = await fetch('/api/links').then(r=>r.json()).catch(()=>({items:[]}));
+  if(d.mode) $('linkMode').value = d.mode;
+  $('linkDecline').value = d.declineCode||'';
+  const items = d.items||[];
+  $('linkCount').textContent = items.length===1 ? '1 activo' : items.length+' activos';
+  $('linkList').innerHTML = items.length ? items.map(x=>`
+    <div class="rule">
+      <span class="tag" style="background:rgba(34,211,238,.15);color:var(--cyan)">${esc(x.network)}</span>
+      <div class="rule-main">
+        <div class="rule-desc">${esc(x.linkId)}</div>
+        <div class="rule-cond">${esc(x.panMasked)} · MTI ${esc(x.mti)} · STAN ${esc(x.stan||'—')} · monto ${esc(x.amount||'—')} · ${new Date(x.createdAt).toLocaleString()}</div>
+      </div>
+    </div>`).join('') : '<div class="empty">Todavía no se emitió ningún identificador.</div>';
+  flujoPintarTarjeta();
+}
+
+async function cambiarModoEnlace(){
+  const mode = $('linkMode').value;
+  const d = await fetch('/api/links/mode',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode})}).then(r=>r.json());
+  if(!d.ok){ toast('Error: '+(d.error||'no se pudo cambiar'), 'err'); return; }
+  toast('Modo de enlace: '+mode, 'ok');
+}
+
+async function resetEnlaces(){
+  if(!confirm('¿Vaciar todos los identificadores emitidos?')) return;
+  await fetch('/api/links',{method:'DELETE'});
+  flujoReiniciar();
+  loadEnlace();
+}
+
+const FLUJO = { pan:null, tlid:null, stan:0 };
+function flujoReiniciar(){
+  const mid = String(Math.floor(Math.random()*1e6)).padStart(6,'0');
+  FLUJO.pan = '555555'+mid+'4444'; FLUJO.tlid = null; FLUJO.stan = 0;
+  $('flujoLog').innerHTML = '<div class="empty">Tarjeta nueva. Empezá por el paso 1.</div>';
+  flujoPintarTarjeta();
+}
+function flujoPintarTarjeta(){
+  if(!FLUJO.pan) flujoReiniciar();
+  $('flujoTarjeta').innerHTML = `Tarjeta de prueba <b>${FLUJO.pan.slice(0,6)}******${FLUJO.pan.slice(-4)}</b> · TLID guardado por el comercio: <b style="color:var(--amber)">${FLUJO.tlid||'ninguno todavía'}</b>`;
+}
+
+const FLUJO_PASOS = {
+  inicial:    { titulo:'Alta de credencial', mti:'0100', conTlid:false },
+  recurrente: { titulo:'Cobro recurrente con TLID', mti:'0100', conTlid:true },
+  sin:        { titulo:'Cobro recurrente sin TLID', mti:'0100', conTlid:false },
+  reverso:    { titulo:'Reverso con TLID', mti:'0400', conTlid:true },
+};
+
+async function flujoPaso(paso){
+  if(!FLUJO.pan) flujoReiniciar();
+  const p = FLUJO_PASOS[paso];
+  if(p.conTlid && !FLUJO.tlid){ toast('Primero ejecutá el paso 1 para obtener un TLID.', 'err'); return; }
+  FLUJO.stan++;
+  const fields = { 2:FLUJO.pan, 3:'000000', 4:'000000019900', 11:String(FLUJO.stan).padStart(6,'0'), 22:'1000' };
+  if(p.conTlid) fields[105] = FLUJO.tlid;
+  const d = await fetch('/api/send',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ mti:p.mti, encoding:'ascii', profile:'mastercard', latencyMs:0, fields })}).then(r=>r.json());
+  if(!d.ok){ toast(d.error||'Error', 'err'); return; }
+  bumpTxCount();
+  const lc = d.sim.lifecycle;
+  if(lc && lc.issued) FLUJO.tlid = lc.issued;
+  const rc = d.response.parsed.responseCode;
+  const entry = `<div class="rule" style="display:block">
+    <div class="rule-desc">${FLUJO.stan}. ${esc(p.titulo)} · MTI ${d.request.parsed.mti} → ${d.response.parsed.mti}
+      <span class="badge ${rc==='00'?'ok':'no'}" style="margin-left:6px">DE39 ${rc}</span></div>
+    ${renderFindings(lc)}
+  </div>`;
+  const log = $('flujoLog');
+  if(log.querySelector('.empty')) log.innerHTML = '';
+  log.insertAdjacentHTML('beforeend', entry);
+  loadEnlace();
 }
 
 // ===================== CRIPTO =====================
@@ -1428,6 +1574,7 @@ function renderResult(d){
     <div class="kv"><span class="k">Latencia simulada</span><span>${d.sim.latencyMs} ms</span></div>
     <div class="kv"><span class="k">Auth (DE38)</span><span>${d.response.parsed.authCode||'—'}</span></div>
     <div class="kv"><span class="k">RRN (DE37)</span><span>${d.response.parsed.retrievalRef||'—'}</span></div>
+    ${renderFindings(d.sim.lifecycle)}
     <h4>Request HEX (${d.request.length}b)</h4><div class="hex">${d.request.hex}</div>
     <h4>Response HEX (${d.response.length}b)</h4><div class="hex">${d.response.hex}</div>`;
 }

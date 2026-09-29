@@ -58,4 +58,15 @@ module.exports = {
     keyId:    process.env.SIM_PIN_KEY_ID  || 'tpk-demo',  // TPK con la que el POS cifró
     format:   process.env.SIM_PIN_FORMAT  || '0',         // ISO 9564-1 formato 0
   },
+
+  // --- Enlace de transacciones (Mastercard TLID en DE105 / Visa Transaction ID en DE62) ---
+  //   mode 'off'    : no se genera ni valida nada.
+  //   mode 'warn'   : se genera/valida y se reportan hallazgos, sin alterar la respuesta.
+  //                   Es lo que hace la red real: la falta de enlace se cobra, no se rechaza.
+  //   mode 'strict' : si hay un hallazgo de error, se rechaza con declineCode. Útil para
+  //                   forzar al integrador a corregir antes de certificar.
+  lifecycle: {
+    mode:        process.env.SIM_LINK_MODE || 'warn',
+    declineCode: process.env.SIM_LINK_DECLINE_CODE || '30',
+  },
 };

@@ -73,5 +73,64 @@ function ok(name, cond) {
   ok('verify MAC correcto', crypto8583.verifyRetailMAC(macData, mac1, zpk).ok === true);
   ok('verify MAC alterado', crypto8583.verifyRetailMAC(macData, mac1.slice(0, -2) + '00', zpk).ok === false);
 
+  console.log('Enlace de transacciones (TLID Mastercard / Transaction ID Visa)');
+  require('../switch-sim/lifecycle-store').reset();
+  const tx = (profile, mti, fields, extra = {}) => processTransaction(
+    iso.buildMessage({ mti, fields, encoding: 'ascii', profile }),
+    { encoding: 'ascii', profile, latencyMs: 0, ...extra },
+  );
+  const codes = (r) => r.sim.lifecycle.findings.map((x) => x.code);
+  const PAN_A = '5555555555554444';
+  const PAN_B = '5105105105105100';
+  const base = { 4: '000000010000', 11: '000101' };
+
+  const mcBuy = await tx('mastercard', '0100', { 2: PAN_A, 3: '000000', ...base });
+  const tlid = mcBuy.response.parsed.fields[105];
+  ok('MC compra aprobada emite TLID de 22 chars en DE105', mcBuy.response.parsed.responseCode === '00' && /^[A-Z0-9]{22}$/.test(tlid));
+
+  const mcRevOk = await tx('mastercard', '0400', { 2: PAN_A, 3: '000000', ...base, 105: tlid });
+  ok('MC reverso con TLID: sin hallazgos y eco del TLID', mcRevOk.sim.lifecycle.findings.length === 0 && mcRevOk.response.parsed.fields[105] === tlid);
+
+  const mcRevMissing = await tx('mastercard', '0400', { 2: PAN_A, 3: '000000', ...base });
+  ok('MC reverso sin TLID (warn): LINK_MISSING pero no altera DE39', codes(mcRevMissing).includes('LINK_MISSING') && mcRevMissing.response.parsed.responseCode === '00');
+
+  const mcRevStrict = await tx('mastercard', '0400', { 2: PAN_A, 3: '000000', ...base }, { lifecycle: { mode: 'strict' } });
+  ok('MC reverso sin TLID (strict): rechaza con DE39=30', mcRevStrict.response.parsed.responseCode === '30' && !mcRevStrict.response.parsed.fields[38]);
+
+  const cofInit = await tx('mastercard', '0100', { 2: PAN_B, 3: '000000', 22: '1000', ...base });
+  const cofTlid = cofInit.response.parsed.fields[105];
+  ok('MC credencial guardada inicial: LINK_INITIAL y emite TLID', codes(cofInit).includes('LINK_INITIAL') && /^[A-Z0-9]{22}$/.test(cofTlid));
+
+  const cofNext = await tx('mastercard', '0100', { 2: PAN_B, 3: '000000', 22: '1000', ...base });
+  ok('MC cobro recurrente sin TLID guardado: LINK_MISSING', codes(cofNext).includes('LINK_MISSING'));
+
+  const cofLinked = await tx('mastercard', '0100', { 2: PAN_B, 3: '000000', 22: '1000', ...base, 105: cofTlid });
+  ok('MC cobro recurrente con TLID: sin hallazgos y mismo TLID', cofLinked.sim.lifecycle.findings.length === 0 && cofLinked.response.parsed.fields[105] === cofTlid);
+
+  const unknown = await tx('mastercard', '0400', { 2: PAN_A, 3: '000000', ...base, 105: 'ZZZZZZZZZZZZZZZZZZZZZZ' });
+  ok('MC TLID desconocido: LINK_UNKNOWN', codes(unknown).includes('LINK_UNKNOWN'));
+
+  const mismatch = await tx('mastercard', '0400', { 2: PAN_B, 3: '000000', ...base, 105: tlid });
+  ok('MC TLID de otra tarjeta: LINK_PAN_MISMATCH', codes(mismatch).includes('LINK_PAN_MISMATCH'));
+
+  const badFormat = await tx('mastercard', '0400', { 2: PAN_A, 3: '000000', ...base, 105: 'CORTO' });
+  ok('MC TLID con formato inválido: LINK_FORMAT', codes(badFormat).includes('LINK_FORMAT'));
+
+  const visaBuy = await tx('visa', '0100', { 2: '4111111111111111', 3: '000000', ...base });
+  const tid = visaBuy.response.parsed.fields[62];
+  ok('Visa compra aprobada emite Transaction ID de 15 dígitos en DE62', /^\d{15}$/.test(tid));
+
+  const visaRefund = await tx('visa', '0200', { 2: '4111111111111111', 3: '200000', ...base, 62: tid });
+  ok('Visa devolución con Transaction ID: sin hallazgos', visaRefund.sim.lifecycle.kind === 'refund' && visaRefund.sim.lifecycle.findings.length === 0);
+
+  const visaRefundMissing = await tx('visa', '0200', { 2: '4111111111111111', 3: '200000', ...base });
+  ok('Visa devolución sin Transaction ID: LINK_MISSING', codes(visaRefundMissing).includes('LINK_MISSING'));
+
+  const generic = await tx('generic', '0200', { 2: PAN_A, 3: '000000', ...base });
+  ok('Perfil genérico: enlace no aplica', generic.sim.lifecycle.applicable === false && !generic.response.parsed.fields[105]);
+
+  const off = await tx('mastercard', '0100', { 2: PAN_A, 3: '000000', ...base }, { lifecycle: { mode: 'off' } });
+  ok('Modo off: no emite TLID', off.sim.lifecycle.applicable === false && !off.response.parsed.fields[105]);
+
   console.log(`\n✅ ${passed} pruebas OK`);
 })().catch((e) => { console.error('\n❌ FALLO:', e.message); process.exit(1); });
