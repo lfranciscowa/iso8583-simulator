@@ -28,7 +28,7 @@ const tcpServer  = require('./tcp-server');
 const { processTransaction } = require('./lib/engine');
 const { writePrefix } = require('./lib/framing');
 const auth = require('./lib/auth');
-const { maskHistoryEntry } = require('./lib/mask');
+const { maskHistoryEntry, maskFields } = require('./lib/mask');
 
 const keyvault = require('./lib/keyvault');
 
@@ -411,6 +411,7 @@ app.post('/api/inspect', (req, res) => {
     const { resolveEncoding } = require('./lib/engine');
     const enc = resolveEncoding(encoding, buf, profile);
     const parsed = iso8583.parseResponse(buf, enc, profile);
+    if (parsed.fields) parsed.fields = maskFields(parsed.fields);
     res.json({ ok: true, encoding: enc, profile, length: buf.length, parsed });
   } catch (err) {
     res.status(400).json({ ok: false, error: err.message });

@@ -4,15 +4,22 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ISO 8583 Simulator</title>
+<link rel="icon" type="image/svg+xml" href="/logo.svg">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#0b1020;--panel:#121a30;--panel2:#0f1729;--border:#243049;
-  --txt:#e6ebf5;--muted:#8b9bc0;--cyan:#22d3ee;--green:#34d399;--red:#f87171;
-  --amber:#fbbf24;--indigo:#818cf8;--mono:'IBM Plex Mono',monospace;--sans:'Sora',sans-serif;
+  --bg:#07070f;--panel:rgba(20,18,38,.72);--panel2:#0c0b19;--border:rgba(139,92,246,.20);
+  --txt:#eeecff;--muted:#8f8cb8;--cyan:#22d3ee;--green:#34d399;--red:#fb7185;
+  --amber:#fbbf24;--indigo:#8b5cf6;--pink:#f472b6;--mono:'IBM Plex Mono',monospace;--sans:'Sora',sans-serif;
+  --grad:linear-gradient(135deg,#8b5cf6 0%,#22d3ee 100%);
+  --glow:0 0 0 1px rgba(139,92,246,.25),0 8px 30px rgba(139,92,246,.18);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--sans);background:var(--bg);color:var(--txt);min-height:100vh}
+body{font-family:var(--sans);color:var(--txt);min-height:100vh;
+  background:radial-gradient(1100px 600px at 8% -10%,rgba(139,92,246,.20),transparent 60%),
+             radial-gradient(900px 520px at 105% 5%,rgba(34,211,238,.13),transparent 60%),
+             radial-gradient(800px 500px at 50% 120%,rgba(244,114,182,.08),transparent 60%),var(--bg);
+  background-attachment:fixed}
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;
   border-bottom:1px solid var(--border);background:var(--panel2);position:sticky;top:0;z-index:10}
 .brand{display:flex;align-items:center;gap:12px;font-weight:800;font-size:16px}
@@ -53,7 +60,7 @@ input:focus,select:focus{border-color:var(--cyan)}
   display:flex;align-items:center;gap:10px;animation:fade .3s}
 @keyframes fade{from{opacity:0;transform:translateX(-6px)}to{opacity:1}}
 .tag{padding:2px 7px;border-radius:5px;font-size:10px;font-weight:600}
-.tag.ascii{background:rgba(129,140,248,.18);color:var(--indigo)}
+.tag.ascii{background:rgba(139,92,246,.18);color:var(--indigo)}
 .tag.ebcdic{background:rgba(251,191,36,.18);color:var(--amber)}
 .muted{color:var(--muted)}
 .rules{font-size:12px;color:var(--muted);line-height:1.8;font-family:var(--mono)}
@@ -102,7 +109,7 @@ textarea:focus{border-color:var(--cyan)}
   display:flex;align-items:center;gap:8px;cursor:pointer}
 .hist-item:hover{background:var(--panel2)}
 .hist-src{padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;text-transform:uppercase}
-.hist-src.ui{background:rgba(129,140,248,.18);color:var(--indigo)}
+.hist-src.ui{background:rgba(139,92,246,.18);color:var(--indigo)}
 .hist-src.tcp{background:rgba(52,211,153,.18);color:var(--green)}
 .export-bar{display:flex;gap:8px;padding:10px 14px;border-top:1px solid var(--border);background:var(--panel2)}
 .bb.same{color:var(--muted)}
@@ -203,17 +210,50 @@ textarea:focus{border-color:var(--cyan)}
 
 /* ---- Visor de trama coloreado ---- */
 .framepart{padding:1px 2px;border-radius:3px;cursor:default}
-.framepart.mti{background:rgba(129,140,248,.25);color:#c7d2fe}
+.framepart.mti{background:rgba(139,92,246,.25);color:#ddd6fe}
 .framepart.bitmap{background:rgba(251,191,36,.20);color:var(--amber)}
 .framepart.de{background:rgba(34,211,238,.14);color:var(--cyan)}
 .framepart.de:nth-child(odd){background:rgba(52,211,153,.12);color:var(--green)}
+
+/* ---- Tema neón fintech ---- */
+.topbar{background:rgba(7,7,15,.75);backdrop-filter:blur(14px);border-bottom:1px solid var(--border)}
+.statusbar{background:rgba(12,11,25,.6);backdrop-filter:blur(10px)}
+.brand-name{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.brand-sub{font-family:var(--mono);font-size:10px;font-weight:500;color:var(--muted);letter-spacing:.06em;margin-left:2px}
+.logo{background:var(--grad);box-shadow:0 0 18px rgba(139,92,246,.55),0 0 34px rgba(34,211,238,.25)}
+.card{background:var(--panel);backdrop-filter:blur(12px);box-shadow:var(--glow);border-radius:16px}
+.card-h{border-bottom:1px solid rgba(139,92,246,.14)}
+.btn-go{background:var(--grad);color:#fff;box-shadow:0 6px 22px rgba(139,92,246,.35)}
+.btn-go:hover{filter:brightness(1.12);box-shadow:0 8px 30px rgba(34,211,238,.35)}
+.btn-ghost:hover{border-color:var(--cyan);color:var(--txt)}
+input:focus,select:focus,textarea:focus{border-color:var(--indigo);box-shadow:0 0 0 3px rgba(139,92,246,.22)}
+.sidebar{background:rgba(9,8,20,.7);backdrop-filter:blur(12px)}
+.nav-item.active{color:#fff;background:linear-gradient(90deg,rgba(139,92,246,.28),rgba(34,211,238,.06));
+  box-shadow:inset 3px 0 0 #a78bfa}
+.nav-group-lbl{color:#a78bfa;opacity:.8}
+.badge.ok,.rc.ok,.b-stat.ok{box-shadow:0 0 12px rgba(52,211,153,.18)}
+.badge.no,.rc.no,.b-stat.no{box-shadow:0 0 12px rgba(251,113,133,.18)}
+.dot{box-shadow:0 0 10px var(--green),0 0 20px rgba(52,211,153,.5)}
+.kpi,.lat-box{background:rgba(12,11,25,.7)}
+.app-foot{max-width:1400px;margin:28px auto 0;padding:18px 24px 26px;border-top:1px solid var(--border);
+  font-size:11.5px;color:var(--muted);line-height:1.6}
+.app-foot-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px;color:var(--txt)}
+.app-foot-top > span:first-child{display:flex;align-items:center;gap:8px}
+.foot-logo{width:18px;height:18px;border-radius:5px}
+.foot-links{display:flex;gap:16px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;color:var(--muted)}
+.foot-links a{color:var(--muted);text-decoration:none}
+.foot-links a:hover{color:var(--cyan)}
+.app-foot p{max-width:900px;opacity:.85}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:rgba(139,92,246,.35);border-radius:10px}
+::-webkit-scrollbar-track{background:transparent}
 </style>
 </head>
 <body>
 <div class="topbar">
   <div class="brand">
     <button class="sidebar-toggle iconbtn" style="width:30px;height:30px;font-size:16px" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
-    <div class="logo">🧪</div> ISO 8583 Simulator
+    <img class="logo" src="/logo.svg" alt=""> <span class="brand-name">ISO 8583 Simulator</span><span class="brand-sub">by Tesh Desarrollo</span>
   </div>
   <div class="topbar-right" style="display:flex;align-items:center;gap:14px">
     <div class="tcp-badge"><span class="dot"></span><span id="tcpInfo">TCP …</span></div>
@@ -235,6 +275,7 @@ textarea:focus{border-color:var(--cyan)}
   <div class="nav-group">
     <div class="nav-group-lbl">Operación</div>
     <button class="nav-item active" data-tab="simulador" onclick="showTab('simulador')">▶ Simulador</button>
+    <button class="nav-item" data-tab="decodificador" onclick="showTab('decodificador')">🔎 Decodificador</button>
     <button class="nav-item" data-tab="batch" onclick="showTab('batch')">📦 Batch</button>
     <button class="nav-item" data-tab="historial" onclick="showTab('historial')">📋 Historial</button>
   </div>
@@ -438,12 +479,12 @@ textarea:focus{border-color:var(--cyan)}
   </div>
 </div>
 
-<!-- ================= TAB: HERRAMIENTAS ================= -->
-<div class="tabpanel wrap" id="tab-herramientas">
+<!-- ================= TAB: DECODIFICADOR ================= -->
+<div class="tabpanel single" id="tab-decodificador">
   <div>
     <div class="card">
-      <div class="card-h">Inspector de tramas
-        <span class="muted" style="font-size:11px;font-weight:400">pegá cualquier hex</span>
+      <div class="card-h">Decodificador ISO 8583
+        <span class="muted" style="font-size:11px;font-weight:400">pegá cualquier trama en hex</span>
       </div>
       <div class="card-b">
         <div class="row" style="margin-bottom:10px">
@@ -467,11 +508,15 @@ textarea:focus{border-color:var(--cyan)}
           <button class="linkbtn" onclick="inspUsarUltimo('response')">⇦ último response</button>
         </label>
         <textarea id="inspHex" rows="3" placeholder="003B6000500100020..."></textarea>
-        <button class="btn btn-go" style="margin-top:10px;font-size:12px" onclick="inspeccionar()">🔍 Inspeccionar</button>
+        <button class="btn btn-go" style="margin-top:10px;font-size:12px" onclick="inspeccionar()">🔍 Decodificar campo por campo</button>
         <div id="inspResult"></div>
       </div>
     </div>
   </div>
+</div>
+
+<!-- ================= TAB: HERRAMIENTAS ================= -->
+<div class="tabpanel single" id="tab-herramientas">
   <div>
     <div class="card">
       <div class="card-h">Comparador de tramas
@@ -698,6 +743,19 @@ textarea:focus{border-color:var(--cyan)}
     </div>
   </div>
 </div>
+
+<footer class="app-foot">
+  <div class="app-foot-top">
+    <span><img src="/logo.svg" alt="" class="foot-logo"> © <span class="year">2026</span> Tesh Desarrollo. Todos los derechos reservados.</span>
+    <span class="foot-links">
+      <a href="https://tesh-desarrollo.com" target="_blank" rel="noopener">tesh-desarrollo.com</a>
+      <a href="https://tesh-desarrollo.com/privacidad" target="_blank" rel="noopener">Privacidad</a>
+      <span>hola@tesh-desarrollo.com</span>
+    </span>
+  </div>
+  <script>document.querySelectorAll('.year').forEach(e => e.textContent = new Date().getFullYear());</script>
+  <p>Entorno de pruebas: no uses datos reales de tarjetas ni de producción. Visa y Mastercard son marcas registradas de sus respectivos titulares; este simulador no está afiliado a ellas ni certificado por ellas. Los perfiles de red y los mandatos de marca son aproximaciones basadas en información pública y no reemplazan la certificación oficial.</p>
+</footer>
 
 </div><!-- /.main -->
 </div><!-- /.layout -->
@@ -1137,7 +1195,7 @@ function renderBines(){
   if(!list.length){ $('binTbody').innerHTML='<tr><td colspan="7" class="muted" style="padding:18px;text-align:center">Sin BINes que coincidan.</td></tr>'; return; }
   $('binTbody').innerHTML = list.map(b=>{
     const col = BRAND_COLORS[b.brand]||'';
-    const tag = col?`<span class="tag" style="background:rgba(129,140,248,.15)">${esc(b.brand)}</span>`:esc(b.brand);
+    const tag = col?`<span class="tag" style="background:rgba(139,92,246,.15)">${esc(b.brand)}</span>`:esc(b.brand);
     return `<tr>
       <td style="font-weight:700;color:var(--cyan)">${esc(b.bin)}</td>
       <td>${tag}</td>

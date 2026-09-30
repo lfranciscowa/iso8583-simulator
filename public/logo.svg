@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="ISO 8583 Simulator">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8b5cf6"/>
+      <stop offset="1" stop-color="#22d3ee"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="url(#g)"/>
+  <rect x="10" y="17" width="7.5" height="7.5" rx="2" fill="#fff"/>
+  <rect x="20" y="17" width="7.5" height="7.5" rx="2" fill="#fff" fill-opacity=".42"/>
+  <rect x="30" y="17" width="7.5" height="7.5" rx="2" fill="#fff"/>
+  <rect x="40" y="17" width="7.5" height="7.5" rx="2" fill="#fff" fill-opacity=".42"/>
+  <path d="M50.5 14.5 L56 20.75 L50.5 27" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M54 43.5 H13" stroke="#fff" stroke-width="3.6" stroke-linecap="round"/>
+  <path d="M19.5 37 L13 43.5 L19.5 50" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
