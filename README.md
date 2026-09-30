@@ -118,7 +118,10 @@ código de procesamiento (DE 3). Cada tarjeta tiene una cuenta simulada en memor
 | Reverso sin retiro original | `25` |
 
 El retiro original se ubica por el STAN de **DE 90** (posiciones 5-10) o, si no viene, por DE 11.
-La pestaña **Cajero ATM** de la UI trae un flujo guiado de 7 pasos con PIN cifrado real (TPK de laboratorio `tpk-demo`, PIN `1234`).
+La pestaña **Cajero ATM** de la UI trae dos formas de probarlo, ambas con PIN cifrado real (TPK de laboratorio `tpk-demo`, PIN `1234`):
+
+- **Cajero virtual en vivo**: un cajero interactivo (pantalla, teclas laterales, teclado, dispensador e impresora) con modelo de estados y pantallas. A la derecha muestra en tiempo real cada paso: la solicitud del cajero al host (simplificada), la trama 0200/0420 que el host arma para el switch, la respuesta 0210/0430 y la orden de vuelta al cajero. Incluye un interruptor para simular falla del dispensador (entrega parcial → reverso 0420 automático).
+- **Flujo guiado** de 7 pasos para recorrer cada código de respuesta.
 `GET /api/atm/cuentas` lista las cuentas (PAN enmascarado) y `DELETE /api/atm/cuentas` las reinicia.
 
 > Simula el mensaje ISO 8583 que llega al host, no el protocolo del cajero

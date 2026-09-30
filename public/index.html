@@ -244,6 +244,72 @@ input:focus,select:focus,textarea:focus{border-color:var(--indigo);box-shadow:0 
 .foot-links a{color:var(--muted);text-decoration:none}
 .foot-links a:hover{color:var(--cyan)}
 .app-foot p{max-width:900px;opacity:.85}
+/* ---- Cajero virtual ---- */
+.vatm{display:grid;grid-template-columns:minmax(360px,1fr) 1fr;gap:18px;align-items:start}
+@media(max-width:980px){.vatm{grid-template-columns:1fr}}
+.vatm-toggle{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:600;color:var(--muted);text-transform:none;letter-spacing:0;margin:0;cursor:pointer}
+.vatm-toggle input{width:auto;accent-color:#f472b6}
+.vatm-machine{background:linear-gradient(180deg,#1c1a33,#0f0e1f);border:1px solid rgba(139,92,246,.35);border-radius:18px;padding:14px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 10px 34px rgba(0,0,0,.45)}
+.vatm-brand{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:#a78bfa;margin:0 4px 10px}
+.vatm-brand img{width:18px;height:18px;border-radius:5px}
+.vatm-face{display:grid;grid-template-columns:44px 1fr 44px;gap:8px;align-items:stretch}
+.vatm-fdks{display:grid;grid-template-rows:repeat(4,1fr);gap:8px;padding:14px 0}
+.vatm-fdk{border:1px solid rgba(139,92,246,.35);background:linear-gradient(180deg,#2a2748,#191730);border-radius:8px;cursor:pointer;
+  color:#a78bfa;font-size:12px;box-shadow:0 2px 0 #0a0916}
+.vatm-fdk:hover:not(:disabled){border-color:var(--cyan);color:var(--cyan)}
+.vatm-fdk:disabled{opacity:.35;cursor:default}
+.vatm-screen{min-height:240px;border-radius:12px;background:radial-gradient(ellipse at 50% 0%,#12305a 0%,#0a1630 55%,#061022 100%);
+  border:2px solid #05060d;box-shadow:inset 0 0 30px rgba(34,211,238,.18),0 0 0 3px rgba(139,92,246,.25);
+  padding:14px 12px;display:grid;grid-template-rows:auto 1fr;font-family:var(--mono);color:#dff6ff;position:relative;overflow:hidden}
+.vatm-screen::after{content:'';position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0 1px,transparent 1px 3px)}
+.vs-title{font-family:var(--sans);font-weight:700;font-size:15px;text-align:center;color:#fff;margin-bottom:6px}
+.vs-body{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(4,1fr);gap:8px;align-items:center}
+.vs-center{grid-column:1/3;grid-row:1/5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;font-size:12.5px;color:#bfe9ff}
+.vs-opt{font-size:11.5px;color:#fff;background:rgba(34,211,238,.12);border:1px solid rgba(34,211,238,.35);border-radius:6px;padding:6px 8px}
+.vs-opt.l{justify-self:start}.vs-opt.r{justify-self:end}
+.vs-pin{font-size:26px;letter-spacing:.35em;color:#fff;min-height:34px}
+.vs-amount{font-size:24px;color:#fff;font-weight:600}
+.vs-big{font-size:22px;font-weight:700;color:#6ee7b7}
+.vs-err{color:#fda4af;font-weight:600}
+.vs-spin{width:34px;height:34px;border-radius:50%;border:3px solid rgba(34,211,238,.25);border-top-color:var(--cyan);animation:vspin .8s linear infinite}
+@keyframes vspin{to{transform:rotate(360deg)}}
+.vatm-lower{display:grid;grid-template-columns:auto 1fr;gap:14px;margin-top:14px;align-items:start}
+.vatm-pad{display:grid;grid-template-columns:repeat(3,46px) 74px;gap:7px}
+.vk{height:38px;border-radius:8px;border:1px solid #3a3760;background:linear-gradient(180deg,#e9e7f5,#bdb9d6);color:#16142a;font-weight:700;
+  font-family:var(--mono);font-size:15px;cursor:pointer;box-shadow:0 3px 0 #6f6a94}
+.vk:active{transform:translateY(2px);box-shadow:0 1px 0 #6f6a94}
+.vk.fn{font-size:10.5px;font-family:var(--sans);color:#fff;border:none}
+.vk.cancel{background:linear-gradient(180deg,#f43f5e,#be123c);box-shadow:0 3px 0 #7f0d25}
+.vk.clear{background:linear-gradient(180deg,#fbbf24,#d97706);box-shadow:0 3px 0 #7c4a03;color:#1c1204}
+.vk.enter{background:linear-gradient(180deg,#34d399,#059669);box-shadow:0 3px 0 #03573c}
+.vk.blank{visibility:hidden}
+.vatm-slots{display:flex;flex-direction:column;gap:9px}
+.vatm-slots .slot{display:block;height:6px;border-radius:4px;background:#05050c;box-shadow:inset 0 1px 3px rgba(0,0,0,.9),0 0 8px rgba(34,211,238,.35);margin-bottom:6px}
+.vatm-card{background:rgba(255,255,255,.03);border:1px dashed rgba(139,92,246,.45);border-radius:10px;padding:8px 10px;color:var(--txt);
+  font-family:var(--sans);font-weight:600;font-size:12px;cursor:pointer;text-align:left}
+.vatm-card:disabled{opacity:.5;cursor:default}
+.vatm-disp,.vatm-printer{background:rgba(255,255,255,.03);border:1px solid rgba(139,92,246,.2);border-radius:10px;padding:8px 10px;min-height:44px}
+.vatm-bills{display:flex;flex-wrap:wrap;gap:4px;min-height:22px}
+.bill{width:34px;height:18px;border-radius:3px;background:linear-gradient(135deg,#6ee7b7,#10b981);border:1px solid #047857;
+  display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#064e3b;animation:billout .35s ease-out both}
+@keyframes billout{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+.vatm-receipt{font-family:var(--mono);font-size:10.5px;line-height:1.45;color:#1f1d2e;background:#f7f5ee;border-radius:4px;padding:0 10px;max-height:0;overflow:hidden;transition:max-height .9s ease,padding .3s}
+.vatm-receipt.show{max-height:320px;padding:10px}
+.vatm-log-wrap{background:rgba(9,8,20,.6);border:1px solid var(--border);border-radius:14px;padding:12px;min-height:420px}
+.vatm-log-h{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:13px;margin-bottom:8px}
+.vatm-legend{display:flex;gap:10px;flex-wrap:wrap;font-family:var(--mono);font-size:10px;margin-bottom:10px}
+.vatm-legend span::before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle}
+.k-cajero::before{background:#a78bfa}.k-host::before{background:#22d3ee}.k-switch::before{background:#f472b6}.k-disp::before{background:#fbbf24}
+.vatm-log{max-height:560px;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
+.vl{border-left:3px solid #a78bfa;background:rgba(255,255,255,.03);border-radius:0 8px 8px 0;padding:8px 10px;animation:fade .3s}
+.vl.host{border-left-color:#22d3ee}.vl.switch{border-left-color:#f472b6}.vl.disp{border-left-color:#fbbf24}
+.vl-t{font-size:12px;font-weight:700;display:flex;justify-content:space-between;gap:8px}
+.vl-t small{font-family:var(--mono);font-weight:400;color:var(--muted);font-size:10px;white-space:nowrap}
+.vl-b{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:4px;line-height:1.55}
+.vl-b b{color:var(--txt)}
+.vl-fields{display:grid;grid-template-columns:auto auto 1fr;gap:1px 10px;margin-top:6px;font-family:var(--mono);font-size:10.5px}
+.vl-fields .de{color:#a78bfa}.vl-fields .nm{color:var(--muted)}.vl-fields .v{color:var(--cyan);word-break:break-all}
 ::-webkit-scrollbar{width:10px;height:10px}
 ::-webkit-scrollbar-thumb{background:rgba(139,92,246,.35);border-radius:10px}
 ::-webkit-scrollbar-track{background:transparent}
@@ -424,6 +490,38 @@ input:focus,select:focus,textarea:focus{border-color:var(--indigo);box-shadow:0 
       </p>
       <div class="rule-cond" id="atmConfig"></div>
       <p class="rule-cond" style="margin:8px 0 0">Simula el mensaje que llega al host, no el protocolo propio del cajero (NDC/DDC), que es de cada fabricante.</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <div class="card-h">Cajero virtual — en vivo
+      <label class="vatm-toggle"><input type="checkbox" id="vFail"> Simular falla del dispensador</label>
+    </div>
+    <div class="card-b">
+      <div class="vatm">
+        <div class="vatm-machine">
+          <div class="vatm-brand"><img src="/logo.svg" alt=""> CAJERO VIRTUAL · TESH</div>
+          <div class="vatm-face">
+            <div class="vatm-fdks" id="vFdkL"></div>
+            <div class="vatm-screen" id="vScreen"></div>
+            <div class="vatm-fdks" id="vFdkR"></div>
+          </div>
+          <div class="vatm-lower">
+            <div class="vatm-pad" id="vPad"></div>
+            <div class="vatm-slots">
+              <button class="vatm-card" id="vCardBtn" onclick="vInsertCard()"><span class="slot"></span><span id="vCardTxt">💳 Insertar tarjeta</span></button>
+              <div class="vatm-disp"><span class="slot"></span><div class="vatm-bills" id="vBills"></div></div>
+              <div class="vatm-printer"><span class="slot"></span><div class="vatm-receipt" id="vReceipt"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="vatm-log-wrap">
+          <div class="vatm-log-h">Flujo en vivo <button class="linkbtn" onclick="vClearLog()">limpiar</button></div>
+          <div class="vatm-legend"><span class="k-cajero">Cajero</span><span class="k-host">Host ATM</span><span class="k-switch">Switch ISO 8583</span><span class="k-disp">Dispositivos</span></div>
+          <div class="vatm-log" id="vLog"><div class="empty">Insertá la tarjeta para empezar. Cada paso del cajero aparece acá con la trama que viaja al switch.</div></div>
+        </div>
+      </div>
+      <p class="rule-cond" style="margin-top:12px">Modelo de estados y pantallas al estilo de los cajeros comerciales; el mensaje cajero → host se muestra simplificado (el formato NDC/DDC es propietario de cada fabricante). La trama host → switch es ISO 8583 real y la procesa este simulador.</p>
     </div>
   </div>
 
@@ -816,7 +914,7 @@ function showTab(name){
   if(name==='bines') loadBines();
   if(name==='cripto') loadCripto();
   if(name==='enlace') loadEnlace();
-  if(name==='atm') loadAtm();
+  if(name==='atm'){ loadAtm(); vInit(); }
 }
 
 // ===================== CAJERO ATM =====================
@@ -915,6 +1013,254 @@ async function atmPaso(paso){
     }
   }catch(e){ toast(e.message, 'err'); }
   loadAtm();
+}
+
+// ===================== CAJERO VIRTUAL =====================
+const V_DE = { 2:'PAN', 3:'Código de proceso', 4:'Monto', 11:'STAN', 18:'MCC (6011 = cajero)', 37:'RRN', 38:'Autorización',
+  39:'Respuesta', 41:'Terminal', 43:'Ubicación', 49:'Moneda', 52:'PIN block', 54:'Saldos', 90:'Datos originales', 95:'Montos de reemplazo' };
+const V_MTI = { '0200':'solicitud financiera', '0210':'respuesta financiera', '0420':'aviso de reverso', '0430':'respuesta al aviso de reverso' };
+const V = { init:false, st:'idle', pan:null, pin:'', op:null, amount:0, entry:'', stan:0, attempts:0, act:{L:[],R:[]}, last:null, dispensed:0, balance:null };
+const vSleep = (ms)=>new Promise(r=>setTimeout(r,ms));
+const vMask = (p)=> p ? p.slice(0,6)+'*'.repeat(Math.max(0,p.length-10))+p.slice(-4) : '';
+
+function vInit(){
+  if(V.init) return;
+  V.init = true;
+  const keys = ['1','2','3','CANCEL','4','5','6','CLEAR','7','8','9','ENTER','','0','',''];
+  $('vPad').innerHTML = keys.map(k=>{
+    if(!k) return '<button class="vk blank" tabindex="-1"></button>';
+    const cls = k==='CANCEL'?'fn cancel':k==='CLEAR'?'fn clear':k==='ENTER'?'fn enter':'';
+    const lbl = k==='CANCEL'?'CANCELAR':k==='CLEAR'?'BORRAR':k==='ENTER'?'ENTER':k;
+    return `<button class="vk ${cls}" onclick="vKey('${k}')">${lbl}</button>`;
+  }).join('');
+  vIdle();
+}
+
+function vScreen(title, center, opts){
+  opts = opts||{}; const L = opts.L||[], R = opts.R||[];
+  V.act = { L, R };
+  const hasOpts = [...L,...R].some(Boolean);
+  let body = '';
+  if(center!==null && center!==undefined) body += `<div class="vs-center" style="grid-row:${hasOpts?'1/4':'1/5'}">${center}</div>`;
+  for(let i=0;i<4;i++){
+    if(L[i]) body += `<div class="vs-opt l" style="grid-row:${i+1};grid-column:1">◀ ${esc(L[i].t)}</div>`;
+    if(R[i]) body += `<div class="vs-opt r" style="grid-row:${i+1};grid-column:2">${esc(R[i].t)} ▶</div>`;
+  }
+  $('vScreen').innerHTML = `<div class="vs-title">${esc(title)}</div><div class="vs-body">${body}</div>`;
+  $('vFdkL').innerHTML = [0,1,2,3].map(i=>`<button class="vatm-fdk" ${L[i]?'':'disabled'} onclick="vFdk('L',${i})">▶</button>`).join('');
+  $('vFdkR').innerHTML = [0,1,2,3].map(i=>`<button class="vatm-fdk" ${R[i]?'':'disabled'} onclick="vFdk('R',${i})">◀</button>`).join('');
+}
+function vFdk(side,i){ const a = V.act[side]?.[i]; if(a) a.fn(); }
+
+function vLog(kind, title, body, fields){
+  const log = $('vLog');
+  if(log.querySelector('.empty')) log.innerHTML = '';
+  const f = fields ? `<div class="vl-fields">${Object.keys(fields).sort((a,b)=>a-b).map(de=>{
+      const v = de==='2' ? vMask(String(fields[de])) : de==='52' ? '•••••••• (cifrado)' : String(fields[de]);
+      return `<span class="de">DE ${de}</span><span class="nm">${esc(V_DE[de]||'')}</span><span class="v">${esc(v)}</span>`;
+    }).join('')}</div>` : '';
+  log.insertAdjacentHTML('beforeend', `<div class="vl ${kind}"><div class="vl-t">${esc(title)}<small>${new Date().toLocaleTimeString()}</small></div>${body?`<div class="vl-b">${body}</div>`:''}${f}</div>`);
+  log.scrollTop = log.scrollHeight;
+}
+function vClearLog(){ $('vLog').innerHTML = '<div class="empty">Insertá la tarjeta para empezar.</div>'; }
+
+function vIdle(){
+  V.st='idle'; V.pin=''; V.entry=''; V.op=null;
+  vScreen('Bienvenido', `<div style="font-size:30px">💳</div>Inserte su tarjeta para comenzar<br><span style="opacity:.7">Tarjeta de prueba · PIN 1234</span>`);
+  $('vCardBtn').disabled = false; $('vCardTxt').textContent = '💳 Insertar tarjeta';
+}
+
+function vInsertCard(){
+  if(V.st!=='idle') return;
+  if(!V.pan) V.pan = '400000'+String(Math.floor(Math.random()*1e6)).padStart(6,'0')+'1234';
+  $('vCardBtn').disabled = true; $('vCardTxt').textContent = '💳 Tarjeta dentro';
+  $('vBills').innerHTML = ''; $('vReceipt').classList.remove('show'); $('vReceipt').innerHTML = '';
+  V.attempts = 0;
+  vLog('cajero','Cajero: tarjeta leída', `Pista 2 leída · PAN <b>${esc(vMask(V.pan))}</b> · pasa al estado de ingreso de PIN`);
+  vPin();
+}
+
+function vPin(){ V.st='pin'; V.pin=''; vShowPin(); }
+function vShowPin(){
+  vScreen('Ingrese su PIN', `<div class="vs-pin">${'•'.repeat(V.pin.length)||'&nbsp;'}</div><span style="opacity:.75">Teclee su PIN y presione ENTER</span>`, { L:[null,null,null,{t:'Cancelar',fn:()=>vEnd('Operación cancelada')}] });
+}
+
+function vMenu(){
+  V.st='menu';
+  vScreen('Seleccione una operación', null, {
+    R:[{t:'Retiro de efectivo',fn:vAmount},{t:'Consulta de saldo',fn:vBalance},null,null],
+    L:[null,null,null,{t:'Cancelar',fn:()=>vEnd('Operación cancelada')}],
+  });
+}
+
+function vAmount(){
+  V.st='amount'; V.op='retiro';
+  const pick = (m)=>({ t:fmtMonto(m), fn:()=>vWithdraw(m) });
+  vScreen('Seleccione el monto', null, {
+    L:[pick(2000),pick(5000),pick(10000),{t:'Cancelar',fn:()=>vEnd('Operación cancelada')}],
+    R:[pick(20000),pick(50000),{t:'Otro monto',fn:vOther},null],
+  });
+}
+function vOther(){ V.st='other'; V.entry=''; vShowOther(); }
+function vShowOther(){
+  const unit = ATM_CFG?.noteUnit || 1000;
+  vScreen('Ingrese el monto', `<div class="vs-amount">${fmtMonto((parseInt(V.entry||'0',10))*100)}</div><span style="opacity:.75">Múltiplos de ${fmtMonto(unit)} · ENTER para confirmar</span>`, { L:[null,null,null,{t:'Cancelar',fn:()=>vEnd('Operación cancelada')}] });
+}
+
+function vKey(k){
+  if(k==='CANCEL'){ if(!['idle','processing','dispensing','end'].includes(V.st)) vEnd('Operación cancelada'); return; }
+  if(V.st==='pin'){
+    if(/\d/.test(k) && V.pin.length<6) V.pin += k;
+    if(k==='CLEAR') V.pin = '';
+    if(k==='ENTER' && V.pin.length>=4){
+      vLog('cajero','Cajero: PIN capturado', 'El teclado cifrado (EPP) arma el PIN block con la TPK: el PIN nunca viaja en claro');
+      return vMenu();
+    }
+    return vShowPin();
+  }
+  if(V.st==='other'){
+    if(/\d/.test(k) && V.entry.length<6) V.entry += k;
+    if(k==='CLEAR') V.entry = '';
+    if(k==='ENTER' && parseInt(V.entry||'0',10)>0) return vWithdraw(parseInt(V.entry,10)*100);
+    return vShowOther();
+  }
+}
+
+async function vPinBlock(){
+  const d = await fetch('/api/crypto/pinblock',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ pin:V.pin, pan:V.pan, keyId:'tpk-demo', format:'0' })}).then(r=>r.json());
+  if(!d.ok) throw new Error(d.error||'No se pudo cifrar el PIN');
+  return d.encryptedPinBlock;
+}
+
+async function vHost(mti, fields, cajeroMsg){
+  V.st='processing';
+  vScreen('Procesando', `<div class="vs-spin"></div>Comunicando con su banco…`);
+  V.stan++;
+  const stan = String(V.stan).padStart(6,'0');
+  const all = { 2:V.pan, 11:stan, 18:'6011', 41:'ATM00002', 43:'CAJERO VIRTUAL TESH', 49:'840', ...fields };
+  if(cajeroMsg) vLog('cajero','Cajero → Host: solicitud de transacción', cajeroMsg);
+  vLog('host',`Host ATM → Switch: ${mti} (${V_MTI[mti]||''})`, 'El host traduce la solicitud del cajero a ISO 8583:', all);
+  const d = await fetch('/api/send',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ mti, encoding:'ascii', profile:'generic', fields:all })}).then(r=>r.json());
+  if(!d.ok) throw new Error(d.error||d.stage||'Error del switch');
+  bumpTxCount();
+  const p = d.response.parsed;
+  const back = {}; for(const de of [37,38,39,54]) if(p.fields[de]!==undefined) back[de] = p.fields[de];
+  vLog('switch',`Switch → Host: ${p.mti} (${V_MTI[p.mti]||''}) · DE39 ${p.responseCode}`, `${esc(p.responseMsg||'')} · ${esc(d.sim.matchedRule.desc||d.sim.matchedRule.id)} · ${d.sim.latencyMs} ms`, back);
+  return { d, stan, rc:p.responseCode, fields:p.fields };
+}
+
+function vParse54(s){
+  s = String(s||'');
+  for(let i=0;i+20<=s.length;i+=20){
+    const c = s.slice(i,i+20);
+    if(c.slice(2,4)==='02') return (c[7]==='D'?-1:1)*parseInt(c.slice(8),10);
+  }
+  return null;
+}
+
+async function vWithdraw(amount){
+  V.amount = amount;
+  try{
+    const pb = await vPinBlock();
+    const r = await vHost('0200', { 3:'011000', 4:pad12(amount), 52:pb }, `Operación <b>retiro</b> · monto <b>${fmtMonto(amount)}</b> · PIN block cifrado`);
+    if(r.rc!=='00') return vDeclined(r.rc, r.d.response.parsed.responseMsg);
+    V.last = r; V.balance = vParse54(r.fields[54]);
+    vLog('host','Host → Cajero: respuesta de transacción', `Autorizado · <b>dispensar ${fmtMonto(amount)}</b> · imprimir comprobante · pantalla "Retire su dinero"`);
+    await vDispense(amount, r);
+  }catch(e){ vError(e.message); }
+}
+
+async function vDispense(amount, r){
+  V.st='dispensing';
+  const unit = ATM_CFG?.noteUnit || 1000;
+  const fail = $('vFail').checked;
+  const notes = Math.round(amount/unit);
+  const delivered = fail ? Math.floor(notes*0.6) : notes;
+  vScreen('Contando billetes', `<div class="vs-spin"></div>Preparando su dinero…`);
+  const bills = $('vBills'); bills.innerHTML = '';
+  for(let i=0;i<Math.min(delivered,14);i++){ bills.insertAdjacentHTML('beforeend', `<span class="bill">${fmtMonto(unit)}</span>`); await vSleep(110); }
+  if(delivered>14) bills.insertAdjacentHTML('beforeend', `<span class="muted" style="font-size:10px">+${delivered-14}</span>`);
+  V.dispensed = delivered*unit;
+  if(fail){
+    vLog('disp','Dispensador: falla mecánica', `Se pidieron ${notes} billetes y salieron <b>${delivered}</b> (${fmtMonto(V.dispensed)} de ${fmtMonto(amount)}). Hay que reversar lo no entregado.`);
+    const de90 = '0200'+r.stan+'0'.repeat(32);
+    const de95 = pad12(V.dispensed)+pad12(0)+'C00000000'+'C00000000';
+    const rv = await vHost('0420', { 3:'011000', 4:pad12(amount), 90:de90, 95:de95 }, `Aviso de falla del dispensador · entregado <b>${fmtMonto(V.dispensed)}</b> de ${fmtMonto(amount)}`);
+    V.balance = vParse54(rv.fields[54]);
+    vLog('host','Host → Cajero: reverso aplicado', `Se devolvieron <b>${fmtMonto(amount-V.dispensed)}</b> a la cuenta · pantalla de entrega incompleta`);
+    vScreen('Entrega incompleta', `<div class="vs-err">Solo se entregaron ${fmtMonto(V.dispensed)}</div>Se devolvieron ${fmtMonto(amount-V.dispensed)} a su cuenta`);
+  } else {
+    vLog('disp','Dispensador: entrega completa', `${delivered} billetes de ${fmtMonto(unit)} = <b>${fmtMonto(V.dispensed)}</b>`);
+    vScreen('Retire su dinero', `<div class="vs-big">${fmtMonto(amount)}</div>Tome sus billetes de la bandeja`);
+  }
+  await vSleep(1800);
+  vReceiptQ();
+}
+
+async function vBalance(){
+  V.op='consulta'; V.amount = 0; V.dispensed = 0;
+  try{
+    const pb = await vPinBlock();
+    const r = await vHost('0200', { 3:'310000', 4:pad12(0), 52:pb }, 'Operación <b>consulta de saldo</b> · PIN block cifrado');
+    if(r.rc!=='00') return vDeclined(r.rc, r.d.response.parsed.responseMsg);
+    V.last = r; V.balance = vParse54(r.fields[54]);
+    vLog('host','Host → Cajero: respuesta de transacción', `Mostrar saldo <b>${fmtMonto(V.balance)}</b> en pantalla`);
+    V.st='balance';
+    vScreen('Su saldo disponible', `<div class="vs-big">${fmtMonto(V.balance)}</div><span style="opacity:.75">Tarjeta ${esc(vMask(V.pan))}</span>`, {
+      L:[null,null,null,{t:'Salir',fn:()=>vEnd('Gracias por su visita')}],
+      R:[null,null,null,{t:'Comprobante',fn:vPrint}],
+    });
+  }catch(e){ vError(e.message); }
+}
+
+function vDeclined(rc, msg){
+  const txt = { '55':'PIN incorrecto', '51':'Fondos insuficientes', '61':'Excede su límite diario de retiro', '13':'Monto inválido para este cajero' }[rc] || msg || ('Código '+rc);
+  vLog('host','Host → Cajero: respuesta de transacción', `Rechazo <b>${esc(rc)}</b> · mostrar pantalla de error`);
+  V.st='declined';
+  const retry = rc==='55' && V.attempts<2;
+  vScreen('Transacción no realizada', `<div class="vs-err">${esc(txt)}</div><span style="opacity:.7">Código de respuesta ${esc(rc)}</span>`, {
+    L:[null,null,null,{t:'Salir',fn:()=>vEnd('Gracias por su visita')}],
+    R:[null,null,null, retry ? {t:'Reintentar PIN',fn:()=>{ V.attempts++; vPin(); }} : {t:'Otra operación',fn:vMenu}],
+  });
+}
+
+function vReceiptQ(){
+  V.st='receiptq';
+  vScreen('¿Desea comprobante?', null, { R:[null,null,{t:'Sí',fn:vPrint},{t:'No',fn:()=>vEnd('Gracias por su visita')}] });
+}
+
+function vPrint(){
+  const r = V.last, f = r.fields;
+  const lines = [
+    '    CAJERO VIRTUAL TESH', '  ATM00002 · PRUEBA', '',
+    new Date().toLocaleString(),
+    'TARJETA   '+vMask(V.pan),
+    'OPERACIÓN '+(V.op==='retiro'?'RETIRO':'CONSULTA'),
+    ...(V.op==='retiro' ? ['ENTREGADO '+fmtMonto(V.dispensed)] : []),
+    'STAN      '+r.stan, 'RRN       '+(f[37]||''), 'AUT       '+(f[38]||''),
+    'SALDO     '+fmtMonto(V.balance), '', '  ENTORNO DE PRUEBAS', ' SIN VALIDEZ COMERCIAL',
+  ];
+  const el = $('vReceipt');
+  el.innerHTML = lines.map(esc).join('<br>');
+  el.classList.add('show');
+  vLog('disp','Impresora: comprobante impreso', `STAN ${esc(r.stan)} · autorización ${esc(f[38]||'—')} · saldo ${fmtMonto(V.balance)}`);
+  setTimeout(()=>vEnd('Gracias por su visita'), 1500);
+}
+
+function vEnd(msg){
+  V.st='end';
+  vScreen('Retire su tarjeta', `<div style="font-size:30px">💳</div>${esc(msg)}`);
+  vLog('cajero','Cajero: tarjeta devuelta', 'Fin de la sesión; el cajero vuelve al estado inicial');
+  setTimeout(()=>{ vIdle(); loadAtm(); }, 2200);
+}
+
+function vError(msg){
+  V.st='end';
+  vLog('host','Host: error de comunicación', esc(msg));
+  vScreen('Fuera de servicio temporal', `<div class="vs-err">No se pudo completar la operación</div>${esc(msg)}`);
+  setTimeout(vIdle, 3000);
 }
 
 // ===================== ENLACE TLID =====================
