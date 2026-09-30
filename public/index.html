@@ -249,6 +249,10 @@ textarea:focus{border-color:var(--cyan)}
     <button class="nav-item" data-tab="bines" onclick="showTab('bines')">💳 BINes</button>
   </div>
   <div class="nav-group">
+    <div class="nav-group-lbl">Canales</div>
+    <button class="nav-item" data-tab="atm" onclick="showTab('atm')">🏧 Cajero ATM</button>
+  </div>
+  <div class="nav-group">
     <div class="nav-group-lbl">Mandatos de marca</div>
     <button class="nav-item" data-tab="enlace" onclick="showTab('enlace')">🔗 Enlace TLID</button>
   </div>
@@ -363,6 +367,52 @@ textarea:focus{border-color:var(--cyan)}
       </span>
     </div>
     <div class="card-b" id="linkList"></div>
+  </div>
+</div>
+
+<!-- ================= TAB: CAJERO ATM ================= -->
+<div class="tabpanel single" id="tab-atm" style="max-width:1100px">
+  <div class="card">
+    <div class="card-h">Cajero automático — lado host ISO 8583</div>
+    <div class="card-b">
+      <p class="rule-cond" style="margin:0 0 12px">
+        El switch reconoce el <b>retiro</b> (DE 3 = <b>01</b>xxxx) y la <b>consulta de saldo</b> (DE 3 = <b>31</b>xxxx):
+        exige PIN cifrado (DE 52), valida denominación, saldo y límite diario, y devuelve los saldos en <b>DE 54</b>.
+        Los reversos (0400/0420) pueden ser totales o por <b>dispensado incompleto</b>, con el monto realmente entregado en <b>DE 95</b>;
+        un reverso duplicado no acredita dos veces.
+      </p>
+      <div class="rule-cond" id="atmConfig"></div>
+      <p class="rule-cond" style="margin:8px 0 0">Simula el mensaje que llega al host, no el protocolo propio del cajero (NDC/DDC), que es de cada fabricante.</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <div class="card-h">Flujo guiado
+      <button class="btn btn-ghost" style="padding:6px 12px;font-size:11px" onclick="atmReiniciar()">↺ Nueva tarjeta</button>
+    </div>
+    <div class="card-b">
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+        <button class="btn btn-go" style="width:auto;font-size:12px" onclick="atmPaso('consulta')">1 · Consulta de saldo</button>
+        <button class="btn btn-ghost" style="width:auto;font-size:12px" onclick="atmPaso('retiro')">2 · Retiro 200,00</button>
+        <button class="btn btn-ghost" style="width:auto;font-size:12px" onclick="atmPaso('pinMalo')">3 · PIN incorrecto</button>
+        <button class="btn btn-ghost" style="width:auto;font-size:12px" onclick="atmPaso('sinFondos')">4 · Sin fondos</button>
+        <button class="btn btn-ghost" style="width:auto;font-size:12px" onclick="atmPaso('limite')">5 · Límite diario</button>
+        <button class="btn btn-ghost" style="width:auto;font-size:12px" onclick="atmPaso('dispensado')">6 · Dispensado incompleto</button>
+        <button class="btn btn-ghost" style="width:auto;font-size:12px" onclick="atmPaso('duplicado')">7 · Reverso duplicado</button>
+      </div>
+      <div class="rule-cond" id="atmTarjeta"></div>
+      <div id="atmLog"><div class="empty">Ejecutá los pasos en orden: cada uno envía una trama real al switch, con el PIN cifrado con la TPK de laboratorio.</div></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <div class="card-h">Cuentas simuladas <span class="muted" id="atmCount" style="font-size:11px;font-weight:400"></span>
+      <span style="display:flex;gap:8px">
+        <button class="btn btn-ghost" style="padding:6px 12px;font-size:11px" onclick="loadAtm()">⟳</button>
+        <button class="btn btn-ghost" style="padding:6px 12px;font-size:11px" onclick="resetAtm()">🗑 Vaciar</button>
+      </span>
+    </div>
+    <div class="card-b" id="atmCuentas"></div>
   </div>
 </div>
 
@@ -708,6 +758,105 @@ function showTab(name){
   if(name==='bines') loadBines();
   if(name==='cripto') loadCripto();
   if(name==='enlace') loadEnlace();
+  if(name==='atm') loadAtm();
+}
+
+// ===================== CAJERO ATM =====================
+const fmtMonto = (n)=>(Number(n||0)/100).toLocaleString('es',{minimumFractionDigits:2,maximumFractionDigits:2});
+const pad12 = (n)=>String(n).padStart(12,'0');
+let ATM_CFG = null;
+const ATM = { pan:null, stan:0, ultimoRetiro:null, ultimoReverso:null };
+
+async function loadAtm(){
+  const d = await fetch('/api/atm/cuentas').then(r=>r.json()).catch(()=>({items:[]}));
+  ATM_CFG = d.config || ATM_CFG;
+  if(ATM_CFG) $('atmConfig').innerHTML = `Saldo inicial por tarjeta <b>${fmtMonto(ATM_CFG.balance)}</b> · límite diario <b>${fmtMonto(ATM_CFG.dailyLimit)}</b> · denominación <b>${fmtMonto(ATM_CFG.noteUnit)}</b>`;
+  const items = d.items||[];
+  $('atmCount').textContent = items.length===1 ? '1 tarjeta' : items.length+' tarjetas';
+  $('atmCuentas').innerHTML = items.length ? items.map(a=>`
+    <div class="rule">
+      <div class="rule-main">
+        <div class="rule-desc">${esc(a.panMasked)}</div>
+        <div class="rule-cond">Saldo <b style="color:var(--green)">${fmtMonto(a.balance)}</b> · retirado hoy ${fmtMonto(a.withdrawnToday)}</div>
+      </div>
+    </div>`).join('') : '<div class="empty">Todavía no hay tarjetas. La primera transacción de cajero crea la cuenta.</div>';
+  atmPintarTarjeta();
+}
+
+async function resetAtm(){
+  if(!confirm('¿Vaciar las cuentas y retiros simulados del cajero?')) return;
+  await fetch('/api/atm/cuentas',{method:'DELETE'});
+  atmReiniciar();
+  loadAtm();
+}
+
+function atmReiniciar(){
+  const mid = String(Math.floor(Math.random()*1e6)).padStart(6,'0');
+  ATM.pan = '400000'+mid+'7899'; ATM.stan = 0; ATM.ultimoRetiro = null; ATM.ultimoReverso = null;
+  $('atmLog').innerHTML = '<div class="empty">Tarjeta nueva. Empezá por el paso 1.</div>';
+  atmPintarTarjeta();
+}
+function atmPintarTarjeta(){
+  if(!ATM.pan) atmReiniciar();
+  $('atmTarjeta').innerHTML = `Tarjeta de prueba <b>${ATM.pan.slice(0,6)}******${ATM.pan.slice(-4)}</b> · PIN correcto <b>1234</b> · terminal ATM00001`;
+}
+
+async function atmPinBlock(pin){
+  const d = await fetch('/api/crypto/pinblock',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ pin, pan:ATM.pan, keyId:'tpk-demo', format:'0' })}).then(r=>r.json());
+  if(!d.ok) throw new Error(d.error||'No se pudo cifrar el PIN');
+  return d.encryptedPinBlock;
+}
+
+async function atmEnviar(titulo, mti, fields){
+  ATM.stan++;
+  const stan = String(ATM.stan).padStart(6,'0');
+  const all = { 2:ATM.pan, 11:stan, 18:'6011', 41:'ATM00001', 43:'CAJERO DE PRUEBA TESH', 49:'840', ...fields };
+  const d = await fetch('/api/send',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ mti, encoding:'ascii', profile:'generic', latencyMs:0, fields:all })}).then(r=>r.json());
+  if(!d.ok) throw new Error(d.error||d.stage||'Error');
+  bumpTxCount();
+  const rc = d.response.parsed.responseCode;
+  const a = d.sim.atm || {};
+  const extra = [
+    a.balance!==undefined ? `saldo <b style="color:var(--green)">${fmtMonto(a.balance)}</b>` : '',
+    a.withdrawnToday!==undefined ? `retirado hoy ${fmtMonto(a.withdrawnToday)}` : '',
+    a.dispensed ? `dispensado ${fmtMonto(a.dispensed)}` : '',
+    a.refunded ? `devuelto <b style="color:var(--amber)">${fmtMonto(a.refunded)}</b>` : '',
+    d.response.parsed.fields[54] ? `DE 54 <span class="muted">${esc(d.response.parsed.fields[54])}</span>` : '',
+  ].filter(Boolean).join(' · ');
+  const log = $('atmLog');
+  if(log.querySelector('.empty')) log.innerHTML = '';
+  log.insertAdjacentHTML('beforeend', `<div class="rule" style="display:block">
+    <div class="rule-desc">${esc(titulo)} · MTI ${d.request.parsed.mti} → ${d.response.parsed.mti} · STAN ${stan}
+      <span class="badge ${rc==='00'?'ok':'no'}" style="margin-left:6px">DE39 ${rc} · ${esc(d.response.parsed.responseMsg||'')}</span></div>
+    <div class="rule-cond" style="margin-top:4px">${esc(d.sim.matchedRule.desc||d.sim.matchedRule.id)}${extra?'<br>'+extra:''}</div>
+  </div>`);
+  return { stan, rc };
+}
+
+async function atmPaso(paso){
+  if(!ATM.pan) atmReiniciar();
+  try{
+    if(paso==='consulta') await atmEnviar('Consulta de saldo','0200',{ 3:'310000', 4:pad12(0), 52:await atmPinBlock('1234') });
+    if(paso==='retiro'){ const r = await atmEnviar('Retiro de 200,00','0200',{ 3:'011000', 4:pad12(20000), 52:await atmPinBlock('1234') }); if(r.rc==='00') ATM.ultimoRetiro = r.stan; }
+    if(paso==='pinMalo') await atmEnviar('Retiro con PIN incorrecto (9999)','0200',{ 3:'011000', 4:pad12(20000), 52:await atmPinBlock('9999') });
+    if(paso==='sinFondos') await atmEnviar('Retiro de 5.000,00 (más que el saldo)','0200',{ 3:'011000', 4:pad12(500000), 52:await atmPinBlock('1234') });
+    if(paso==='limite') await atmEnviar('Retiro de 400,00 (excede el límite diario)','0200',{ 3:'011000', 4:pad12(40000), 52:await atmPinBlock('1234') });
+    if(paso==='dispensado'){
+      const r = await atmEnviar('Retiro de 100,00','0200',{ 3:'011000', 4:pad12(10000), 52:await atmPinBlock('1234') });
+      if(r.rc!=='00'){ toast('El retiro de 100,00 fue rechazado; probá con una tarjeta nueva.', 'err'); return; }
+      const de90 = '0200'+r.stan+'0'.repeat(32);
+      const de95 = pad12(6000)+pad12(0)+'C00000000'+'C00000000';
+      ATM.ultimoReverso = { de90, de95 };
+      await atmEnviar('Reverso: el cajero solo entregó 60,00','0420',{ 3:'011000', 4:pad12(10000), 90:de90, 95:de95 });
+    }
+    if(paso==='duplicado'){
+      if(!ATM.ultimoReverso){ toast('Primero ejecutá el paso 6.', 'err'); return; }
+      await atmEnviar('Mismo reverso reenviado (reintento del cajero)','0420',{ 3:'011000', 4:pad12(10000), ...{90:ATM.ultimoReverso.de90, 95:ATM.ultimoReverso.de95} });
+    }
+  }catch(e){ toast(e.message, 'err'); }
+  loadAtm();
 }
 
 // ===================== ENLACE TLID =====================

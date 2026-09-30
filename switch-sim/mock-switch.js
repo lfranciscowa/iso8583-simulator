@@ -15,6 +15,7 @@
 const rulesStore = require('./rules-store');
 const keysStore  = require('./keys-store');
 const crypto8583 = require('../lib/crypto8583');
+const atm        = require('../lib/atm');
 const config     = require('../config/default');
 
 // ----------------------------------------------------------------------------
@@ -114,6 +115,19 @@ async function process(request, opts = {}) {
       matchedRule: { id: 'pin-incorrecto', desc: 'DE52 presente: PIN incorrecto o no descifrable → 55' },
       pin: pinCheck,
       fields,
+      latencyMs,
+    };
+  }
+
+  // --- Cajero automático: retiro, consulta y sus reversos tienen su propia lógica ---
+  if (atm.applies(request)) {
+    const r = atm.process(request, { ...config.atm, ...(opts.atm || {}) }, { genAuthId });
+    return {
+      responseCode: r.responseCode,
+      matchedRule: r.matchedRule,
+      pin: pinCheck.checked ? pinCheck : undefined,
+      atm: r.atm,
+      fields: { ...r.fields, 37: genRrn() },
       latencyMs,
     };
   }

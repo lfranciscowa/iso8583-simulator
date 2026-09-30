@@ -64,6 +64,7 @@ function start(opts = {}) {
         responseCode: rc,
         matchedRule: result.sim.matchedRule,
         lifecycle: result.sim.lifecycle,
+        atm: result.sim.atm,
         elapsedMs: Date.now() - t0,
         request: result.request,
         response: { hex: result.response.hex, length: result.response.length, parsed: result.response.parsed },

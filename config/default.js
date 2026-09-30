@@ -69,4 +69,14 @@ module.exports = {
     mode:        process.env.SIM_LINK_MODE || 'warn',
     declineCode: process.env.SIM_LINK_DECLINE_CODE || '30',
   },
+
+  // --- Cajero automático (ATM) ---
+  //  Montos en unidades menores, igual que DE 4 (150000 = 1.500,00).
+  //  Cada tarjeta nueva arranca con `balance`; `dailyLimit` acota lo retirado por día
+  //  y `noteUnit` es la denominación mínima que el cajero puede dispensar.
+  atm: {
+    balance:    parseInt(process.env.SIM_ATM_BALANCE     || '150000', 10),
+    dailyLimit: parseInt(process.env.SIM_ATM_DAILY_LIMIT || '50000', 10),
+    noteUnit:   parseInt(process.env.SIM_ATM_NOTE_UNIT   || '1000', 10),
+  },
 };

@@ -132,5 +132,56 @@ function ok(name, cond) {
   const off = await tx('mastercard', '0100', { 2: PAN_A, 3: '000000', ...base }, { lifecycle: { mode: 'off' } });
   ok('Modo off: no emite TLID', off.sim.lifecycle.applicable === false && !off.response.parsed.fields[105]);
 
+  console.log('Cajero automático (ATM)');
+  require('../switch-sim/atm-store').reset();
+  const tpk = require('../switch-sim/keys-store').getById('tpk-demo').keyHex;
+  const ATM_PAN = '4000001234567899';
+  const pinBlock = (pin) => crypto8583.encryptPin(pin, ATM_PAN, tpk, '0').encryptedPinBlock;
+  const atmTx = (mti, fields) => processTransaction(
+    iso.buildMessage({ mti, fields: { 2: ATM_PAN, 18: '6011', 41: 'ATM00001', 49: '840', ...fields }, encoding: 'ascii' }),
+    { encoding: 'ascii', profile: 'generic', latencyMs: 0 },
+  );
+  const rc = (r) => r.response.parsed.responseCode;
+  const saldo = (r) => r.sim.atm.balance;
+
+  const consulta = await atmTx('0200', { 3: '310000', 4: '000000000000', 11: '000501', 52: pinBlock('1234') });
+  ok('consulta de saldo aprobada con saldo en DE 54', rc(consulta) === '00' && /^0001840C000000150000/.test(consulta.response.parsed.fields[54]));
+
+  const sinPin = await atmTx('0200', { 3: '011000', 4: '000000020000', 11: '000502' });
+  ok('retiro sin PIN → 55', rc(sinPin) === '55');
+
+  const pinMalo = await atmTx('0200', { 3: '011000', 4: '000000020000', 11: '000503', 52: pinBlock('9999') });
+  ok('retiro con PIN incorrecto → 55', rc(pinMalo) === '55');
+
+  const montoRaro = await atmTx('0200', { 3: '011000', 4: '000000020050', 11: '000504', 52: pinBlock('1234') });
+  ok('monto no múltiplo del billete → 13', rc(montoRaro) === '13');
+
+  const retiro = await atmTx('0200', { 3: '011000', 4: '000000020000', 11: '000505', 52: pinBlock('1234') });
+  ok('retiro 200,00 aprobado y descuenta saldo', rc(retiro) === '00' && saldo(retiro) === 130000 && !!retiro.response.parsed.fields[38]);
+
+  const muchoDinero = await atmTx('0200', { 3: '011000', 4: '000000500000', 11: '000506', 52: pinBlock('1234') });
+  ok('retiro mayor al saldo → 51', rc(muchoDinero) === '51');
+
+  const limite = await atmTx('0200', { 3: '011000', 4: '000000040000', 11: '000507', 52: pinBlock('1234') });
+  ok('retiro que excede el límite diario → 61', rc(limite) === '61' && saldo(limite) === 130000);
+
+  const retiro2 = await atmTx('0200', { 3: '011000', 4: '000000010000', 11: '000508', 52: pinBlock('1234') });
+  const de90 = '0200' + '000508' + '0'.repeat(32);
+  const de95 = '000000006000' + '0'.repeat(12) + 'C00000000' + 'C00000000';
+  const parcial = await atmTx('0420', { 3: '011000', 4: '000000010000', 11: '000509', 90: de90, 95: de95 });
+  ok('dispensado incompleto: reverso parcial devuelve 40,00', rc(retiro2) === '00' && rc(parcial) === '00' && parcial.response.parsed.mti === '0430' && parcial.sim.atm.refunded === 4000 && saldo(parcial) === 124000);
+
+  const duplicado = await atmTx('0420', { 3: '011000', 4: '000000010000', 11: '000510', 90: de90, 95: de95 });
+  ok('reverso duplicado: responde 00 sin acreditar de nuevo', rc(duplicado) === '00' && duplicado.sim.atm.kind === 'reverso-duplicado' && saldo(duplicado) === 124000);
+
+  const total = await atmTx('0400', { 3: '011000', 4: '000000020000', 11: '000505' });
+  ok('reverso total del retiro de 200,00', rc(total) === '00' && total.sim.atm.kind === 'reverso-total' && saldo(total) === 144000);
+
+  const huerfano = await atmTx('0400', { 3: '011000', 4: '000000020000', 11: '999999' });
+  ok('reverso sin retiro original → 25', rc(huerfano) === '25');
+
+  const pos = await processTransaction(iso.buildMessage({ mti: '0200', fields: { 2: ATM_PAN, 3: '000000', 4: '000000010000', 11: '000511' }, encoding: 'ascii' }), { encoding: 'ascii', latencyMs: 0 });
+  ok('compra normal (DE 3 = 00) sigue usando las reglas del switch', rc(pos) === '00' && !pos.sim.atm);
+
   console.log(`\n✅ ${passed} pruebas OK`);
 })().catch((e) => { console.error('\n❌ FALLO:', e.message); process.exit(1); });

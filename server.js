@@ -22,6 +22,7 @@ const scenarioStore = require('./switch-sim/scenarios-store');
 const binesStore = require('./switch-sim/bines-store');
 const keysStore = require('./switch-sim/keys-store');
 const lifecycleStore = require('./switch-sim/lifecycle-store');
+const atmStore = require('./switch-sim/atm-store');
 const crypto8583 = require('./lib/crypto8583');
 const tcpServer  = require('./tcp-server');
 const { processTransaction } = require('./lib/engine');
@@ -308,6 +309,16 @@ app.delete('/api/links', (req, res) => {
   res.json({ ok: true });
 });
 
+// --- Cajero automático: cuentas simuladas ---
+app.get('/api/atm/cuentas', (req, res) => {
+  res.json({ config: config.atm, items: atmStore.list() });
+});
+
+app.delete('/api/atm/cuentas', (req, res) => {
+  atmStore.reset();
+  res.json({ ok: true });
+});
+
 // --- Armar trama sin enviar ---
 app.post('/api/build', (req, res) => {
   const { mti, fields, encoding = 'ascii', profile = 'generic' } = req.body || {};
@@ -334,7 +345,7 @@ app.post('/api/send', async (req, res) => {
       peer: 'UI', encoding: result.encoding, profile: result.profile,
       reqMti: result.request.parsed.mti, respMti: result.response.parsed.mti,
       responseCode: result.response.parsed.responseCode,
-      matchedRule: result.sim.matchedRule, lifecycle: result.sim.lifecycle, elapsedMs: result.sim.latencyMs,
+      matchedRule: result.sim.matchedRule, lifecycle: result.sim.lifecycle, atm: result.sim.atm, elapsedMs: result.sim.latencyMs,
       request: result.request, response: { hex: result.response.hex, length: result.response.length, parsed: result.response.parsed },
     }));
     if (history.length > 500) history.pop();
@@ -370,7 +381,7 @@ app.post('/api/pos-tcp', auth.requireBridgeKey, async (req, res) => {
       peer: 'POS (bridge)', encoding: result.encoding, profile: result.profile,
       reqMti: result.request.parsed.mti, respMti: result.response.parsed.mti,
       responseCode: result.response.parsed.responseCode,
-      matchedRule: result.sim.matchedRule, lifecycle: result.sim.lifecycle, elapsedMs: result.sim.latencyMs,
+      matchedRule: result.sim.matchedRule, lifecycle: result.sim.lifecycle, atm: result.sim.atm, elapsedMs: result.sim.latencyMs,
       request: result.request,
       response: { hex: result.response.hex, length: result.response.length, parsed: result.response.parsed },
     }));
@@ -381,6 +392,7 @@ app.post('/api/pos-tcp', auth.requireBridgeKey, async (req, res) => {
       responseHex: result.response.hex,
       responseCode: result.response.parsed.responseCode,
       lifecycle: result.sim.lifecycle,
+      atm: result.sim.atm,
       elapsedMs: Date.now() - t0,
     });
   } catch (err) {

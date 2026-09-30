@@ -54,6 +54,9 @@ npm run tcp
 | `SIM_MASTER_KEY` | *(clave de laboratorio)* | KEK para cifrar el llavero (`config/keys.json`) en reposo |
 | `SIM_LINK_MODE` | `warn` | Enlace de transacciones: `off` · `warn` · `strict` (ver abajo) |
 | `SIM_LINK_DECLINE_CODE` | `30` | DE39 con que se rechaza en modo `strict` |
+| `SIM_ATM_BALANCE` | `150000` | Saldo inicial de cada tarjeta en el cajero (unidades menores: 1.500,00) |
+| `SIM_ATM_DAILY_LIMIT` | `50000` | Límite diario de retiro por tarjeta (500,00) |
+| `SIM_ATM_NOTE_UNIT` | `1000` | Denominación mínima que dispensa el cajero (10,00) |
 
 ---
 
@@ -97,6 +100,29 @@ code, montos, monedas DE49/50/51, tracks, RRN, EMV DE55, PIN DE52, etc.).
 | Cualquier otro caso | `00` Aprobada |
 
 Las reglas son editables en `switch-sim/mock-switch.js`.
+
+---
+
+## 🏧 Cajero automático (ATM)
+
+El switch atiende el lado host de las transacciones de cajero, identificadas por el
+código de procesamiento (DE 3). Cada tarjeta tiene una cuenta simulada en memoria.
+
+| Transacción | Comportamiento |
+|---|---|
+| Consulta de saldo (`31xxxx`) | Exige PIN (DE 52); devuelve saldo contable y disponible en **DE 54** |
+| Retiro (`01xxxx`) | Exige PIN; valida denominación (`13`), saldo (`51`) y límite diario (`61`); descuenta y devuelve DE 54 |
+| Reverso total (`0400`/`0420` sin DE 95) | Devuelve el monto completo del retiro |
+| Reverso por dispensado incompleto (`0420` con DE 95) | Devuelve solo lo que el cajero no entregó (monto original − primeros 12 dígitos de DE 95) |
+| Reverso duplicado | Responde `00` sin acreditar de nuevo (reintentos del cajero) |
+| Reverso sin retiro original | `25` |
+
+El retiro original se ubica por el STAN de **DE 90** (posiciones 5-10) o, si no viene, por DE 11.
+La pestaña **Cajero ATM** de la UI trae un flujo guiado de 7 pasos con PIN cifrado real (TPK de laboratorio `tpk-demo`, PIN `1234`).
+`GET /api/atm/cuentas` lista las cuentas (PAN enmascarado) y `DELETE /api/atm/cuentas` las reinicia.
+
+> Simula el mensaje ISO 8583 que llega al host, no el protocolo del cajero
+> (NDC de NCR, DDC de Diebold), cuyas especificaciones son de cada fabricante.
 
 ---
 

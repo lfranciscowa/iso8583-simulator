@@ -36,7 +36,12 @@ function load() {
   if (cache) return cache;
   try {
     const parsed = JSON.parse(fs.readFileSync(FILE, 'utf8'));
-    if (Array.isArray(parsed)) { cache = parsed.map(fromStored); return cache; }
+    if (Array.isArray(parsed)) {
+      cache = parsed.map(fromStored);
+      // Archivos de versiones anteriores guardaban keyHex en claro: se reescriben cifrados.
+      if (parsed.some(k => !k.keyHexEnc && k.keyHex)) persist();
+      return cache;
+    }
   } catch (_) { /* sembrar defaults */ }
   cache = DEFAULTS.map(normalize);
   persist();
@@ -54,6 +59,7 @@ function persist() {
 
 // Reconstruye un registro en memoria a partir de lo guardado (cifrado) en disco.
 function fromStored(k) {
+  if (!k.keyHexEnc && k.keyHex) return normalize({ ...k });
   let keyHex = '';
   try { keyHex = keyvault.unseal(k.keyHexEnc); } catch (_) { keyHex = ''; }
   return normalize({ ...k, keyHex });
