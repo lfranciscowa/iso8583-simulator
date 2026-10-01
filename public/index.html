@@ -1113,7 +1113,7 @@ function vKey(k){
     if(/\d/.test(k) && V.pin.length<6) V.pin += k;
     if(k==='CLEAR') V.pin = '';
     if(k==='ENTER' && V.pin.length>=4){
-      vLog('cajero','Cajero: PIN capturado', 'El teclado cifrado (EPP) arma el PIN block con la TPK: el PIN nunca viaja en claro');
+      vLog('cajero','Cajero: PIN capturado', 'El PIN se cifra como PIN block (ISO 9564) con la TPK de laboratorio. En un cajero real lo hace el teclado cifrado (EPP); aquí lo simula el HSM de software');
       return vMenu();
     }
     return vShowPin();

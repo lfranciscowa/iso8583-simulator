@@ -64,7 +64,8 @@ npm run tcp
 
 - **Login por sesión**: si se define `SIM_ADMIN_PASS`, la UI redirige a `/login.html` y toda la API responde `401` sin una sesión válida (cookie `HttpOnly`).
 - **Enmascaramiento de PAN**: el historial, el feed en vivo y el dashboard muestran el PAN (DE2) como `411111******1111` (primeros 6 + últimos 4, formato PCI-DSS).
-- **Llavero cifrado en reposo**: las llaves 3DES de `config/keys.json` se guardan cifradas (AES-256-GCM) bajo `SIM_MASTER_KEY`. El endpoint `GET /api/keys` nunca devuelve la llave en claro, solo su KCV — igual que un HSM real.
+- **Llavero cifrado en reposo**: las llaves 3DES de `config/keys.json` se guardan cifradas (AES-256-GCM) bajo `SIM_MASTER_KEY`. El endpoint `GET /api/keys` nunca devuelve la llave en claro, solo su KCV, imitando el comportamiento de un HSM.
+- **HSM simulado**: 3DES, PIN blocks ISO 9564 y MAC usan los algoritmos estándar, pero corren en software (módulo `crypto` de Node.js). Sirve para probar integraciones; no reemplaza un HSM físico ni un teclado cifrado (EPP) en producción.
 
 ---
 
